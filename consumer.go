@@ -2,109 +2,155 @@ package ntikafka
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
+	"github.com/go-faster/errors"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl/scram"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
-var dialer *kafka.Dialer
-
-type consumecfg struct {
-	errHandler func(context.Context, error)
+type Cfg struct {
+	host string
+	user string
+	pass string
+	errh ErrorHandler
 }
 
-type ConsumeOpt func(*consumecfg)
-
-func WithErrorHandler(fn func(context.Context, error)) ConsumeOpt {
-	return func(ccfg *consumecfg) {
-		ccfg.errHandler = fn
+func Host(host string) Option {
+	return func(cfg *Cfg) {
+		cfg.host = host
 	}
 }
 
-func panicErrHandler(ctx context.Context, err error) {
-	panic(err)
+func Credentials(user, password string) Option {
+	return func(cfg *Cfg) {
+		cfg.user = user
+		cfg.pass = password
+	}
 }
 
-func SetDialer() error {
-	mechanism, err := scram.Mechanism(
-		scram.SHA512,
-		"internal_consumer",
-		os.Getenv("KAFKA_INTERNAL_CONSUMER_PASSWORD"),
-	)
-	if err != nil {
-		return fmt.Errorf("scram.Mechanism: %w", err)
+func WithErrorHandler(fn ErrorHandler) Option {
+	return func(c *Cfg) {
+		c.errh = fn
 	}
-	dialer = &kafka.Dialer{
-		TLS:           tlscfg,
-		SASLMechanism: mechanism,
-		// ClientID:      clientID, TODO
-		Timeout:   time.Second * 10,
-		DualStack: true,
-	}
-	return nil
 }
 
-// Consume циклично читает и обрабатывает сообщения из топика в рамках Consumer Group.
-//
-// Контекст ctx используется для управления жизненным циклом.
-//
-// Прочитанное сообщение передается в handler, и если вызов завершится с nil ошибкой,
-// то косьюмер коммитит оффест этого сообщения.
-//
-// Используется глобальный объект *kafka.Dialer. Если он отсуствует, то Consume
-// попытается создать новый сразу же на запуске, и если в процессе возникнет
-// ошибка, то будет создана паника. Во-избежание этого можно воспользоваться
-// функцией SetDialer.
-//
-// При получении ошибки, так же, создается паника. Для переопределния этого
-// поведения, нужно использовать опцию WithErrorHandler.
-func Consume(ctx context.Context, topic, groupID string, handler func(context.Context, kafka.Message) error, opts ...ConsumeOpt) {
-	if dialer == nil {
-		if err := SetDialer(); err != nil {
-			panic(err)
-		}
+type Option func(*Cfg)
+
+type MessageHandler func(context.Context, kafka.Message) error
+
+type ErrorHandler func(context.Context, error)
+
+var tlsConfig *tls.Config
+
+func init() {
+	ca := os.Getenv("KAFKA_CA_PEM")
+	if ca == "" {
+		return
 	}
-	ccfg := &consumecfg{}
+	certs := x509.NewCertPool()
+	certs.AppendCertsFromPEM([]byte(ca))
+	tlsConfig = &tls.Config{
+		InsecureSkipVerify: true,
+		RootCAs:            certs,
+	}
+}
+
+// Запуск Kafka Consumer в составе группы group и топика topic.
+func Start(ctx context.Context, log *slog.Logger, topic, group string, fn MessageHandler, opts ...Option) (err error) {
+	cfg := &Cfg{
+		host: os.Getenv("KAFKA_HOST"),
+		user: os.Getenv("KAFKA_USER"),
+		pass: os.Getenv("KAFKA_PASS"),
+	}
 	for _, opt := range opts {
-		opt(ccfg)
+		opt(cfg)
 	}
-	if ccfg.errHandler == nil {
-		ccfg.errHandler = panicErrHandler
+
+	mechanism, err := scram.Mechanism(scram.SHA512, cfg.user, cfg.pass)
+	if err != nil {
+		return errors.Wrap(err, "scram.Mechanism")
 	}
-	consumer := kafka.NewReader(kafka.ReaderConfig{
-		Logger:  kafka.LoggerFunc(log.Default().Printf),
-		Brokers: []string{os.Getenv("KAFKA_HOST")},
-		GroupID: groupID,
-		Topic:   topic,
+	dialer := &kafka.Dialer{
+		SASLMechanism: mechanism,
+		Timeout:       time.Second * 10,
+		DualStack:     true,
+	}
+	if tlsConfig != nil {
+		dialer.TLS = tlsConfig
+	}
+
+	reader := kafka.NewReader(kafka.ReaderConfig{
 		Dialer:  dialer,
+		Brokers: []string{cfg.host},
+		Topic:   topic,
+		GroupID: group,
+		ErrorLogger: kafka.LoggerFunc(func(msg string, attrs ...any) {
+			log.ErrorContext(ctx, fmt.Sprintf(msg, attrs...))
+		}),
 	})
-	defer consumer.Close()
+	defer func() {
+		err = errors.Join(err, reader.Close())
+	}()
+
+	handler := &handler{
+		tracer: otel.GetTracerProvider().Tracer("ntikafka"),
+		errh:   cfg.errh,
+		impl:   fn,
+	}
 
 	for {
-		msg, err := consumer.FetchMessage(ctx)
+		msg, err := reader.FetchMessage(ctx)
 		if err != nil {
-			if err == context.Canceled {
-				break
-			}
-			ccfg.errHandler(ctx, err)
-			continue
+			return err
 		}
-		if err = handler(ctx, msg); err != nil {
-			if err == context.Canceled {
-				break
-			}
-			ccfg.errHandler(ctx, err)
-			continue
+		if err := handler.handle(ctx, msg); err != nil {
+			return err
 		}
-		if err = consumer.CommitMessages(ctx, msg); err != nil {
-			if err == context.Canceled {
-				break
-			}
-			ccfg.errHandler(ctx, err)
+		if err = reader.CommitMessages(ctx, msg); err != nil {
+			return err
 		}
 	}
+}
+
+type handler struct {
+	tracer trace.Tracer
+	errh   ErrorHandler
+	impl   MessageHandler
+}
+
+var (
+	attrMsgBytes = attribute.Key("message.value.bytes")
+)
+
+func (h *handler) handle(ctx context.Context, msg kafka.Message) error {
+	ctx, span := h.tracer.Start(
+		ctx, "kconsumer.handle", trace.WithAttributes(
+			attrMsgBytes.Int(len(msg.Value)),
+		),
+	)
+	defer span.End()
+	err := h.impl(ctx, msg)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			span.AddEvent("отменена обработка сообщения")
+			return err
+		}
+		span.SetStatus(codes.Error, "обработчик сообщения вернул ошибку")
+		if h.errh != nil {
+			h.errh(ctx, err)
+		}
+		return err
+	}
+	span.SetStatus(codes.Ok, "обработка сообщения успешно завершена")
+	return nil
 }

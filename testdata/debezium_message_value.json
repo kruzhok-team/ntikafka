@@ -1,0 +1,199 @@
+{
+  "schema": {
+    "type": "struct",
+    "fields": [
+      {
+        "type": "struct",
+        "fields": [
+          {
+            "type": "string",
+            "optional": false,
+            "name": "io.debezium.data.Uuid",
+            "version": 1,
+            "field": "id"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "name": "io.debezium.time.ZonedTimestamp",
+            "version": 1,
+            "default": "1970-01-01T00:00:00.000000Z",
+            "field": "created_at"
+          },
+          {
+            "type": "double",
+            "optional": true,
+            "field": "score"
+          }
+        ],
+        "optional": true,
+        "name": "test_db.public.test_table.Value",
+        "field": "before"
+      },
+      {
+        "type": "struct",
+        "fields": [
+          {
+            "type": "string",
+            "optional": false,
+            "name": "io.debezium.data.Uuid",
+            "version": 1,
+            "field": "id"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "name": "io.debezium.time.ZonedTimestamp",
+            "version": 1,
+            "default": "1970-01-01T00:00:00.000000Z",
+            "field": "created_at"
+          },
+          {
+            "type": "double",
+            "optional": true,
+            "field": "score"
+          }
+        ],
+        "optional": true,
+        "name": "test_db.public.test_table.Value",
+        "field": "after"
+      },
+      {
+        "type": "struct",
+        "fields": [
+          {
+            "type": "string",
+            "optional": false,
+            "field": "version"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "field": "connector"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "field": "name"
+          },
+          {
+            "type": "int64",
+            "optional": false,
+            "field": "ts_ms"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "name": "io.debezium.data.Enum",
+            "version": 1,
+            "parameters": {
+              "allowed": "true,last,false,incremental"
+            },
+            "default": "false",
+            "field": "snapshot"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "field": "db"
+          },
+          {
+            "type": "string",
+            "optional": true,
+            "field": "sequence"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "field": "schema"
+          },
+          {
+            "type": "string",
+            "optional": false,
+            "field": "table"
+          },
+          {
+            "type": "int64",
+            "optional": true,
+            "field": "txId"
+          },
+          {
+            "type": "int64",
+            "optional": true,
+            "field": "lsn"
+          },
+          {
+            "type": "int64",
+            "optional": true,
+            "field": "xmin"
+          }
+        ],
+        "optional": false,
+        "name": "io.debezium.connector.postgresql.Source",
+        "field": "source"
+      },
+      {
+        "type": "string",
+        "optional": false,
+        "field": "op"
+      },
+      {
+        "type": "int64",
+        "optional": true,
+        "field": "ts_ms"
+      },
+      {
+        "type": "struct",
+        "fields": [
+          {
+            "type": "string",
+            "optional": false,
+            "field": "id"
+          },
+          {
+            "type": "int64",
+            "optional": false,
+            "field": "total_order"
+          },
+          {
+            "type": "int64",
+            "optional": false,
+            "field": "data_collection_order"
+          }
+        ],
+        "optional": true,
+        "name": "event.block",
+        "version": 1,
+        "field": "transaction"
+      }
+    ],
+    "optional": false,
+    "name": "test_db.public.test_table.Envelope",
+    "version": 1
+  },
+  "payload": {
+    "before": null,
+    "after": {
+      "id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
+      "created_at": "2025-03-03T13:22:47.212818Z",
+      "score": null
+    },
+    "source": {
+      "version": "2.2.1.Final",
+      "connector": "postgresql",
+      "name": "test_table",
+      "ts_ms": 1741008167215,
+      "snapshot": "false",
+      "db": "test_db",
+      "sequence": "[\"204851857768\",\"204851869392\"]",
+      "schema": "public",
+      "table": "test_table",
+      "txId": 1255087870,
+      "lsn": 204851869392,
+      "xmin": null
+    },
+    "op": "u",
+    "ts_ms": 1741008167284,
+    "transaction": null
+  }
+}
