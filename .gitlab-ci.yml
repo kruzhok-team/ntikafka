@@ -12,5 +12,9 @@ tests:
     paths:
       - .cache/pkg/mod/
   script:
-    - go test -race -count=1 -bench . -cover
+    - go test -race -count=1 -bench . -coverprofile=coverage.out
+    - go tool cover -html=coverage.out -o coverage.html
   coverage: '/coverage: \d+.\d+% of statements/'
+  artifacts:
+    paths:
+      - coverage.html
