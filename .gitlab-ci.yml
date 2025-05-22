@@ -13,8 +13,12 @@ tests:
       - .cache/pkg/mod/
   script:
     - go test -race -count=1 -bench . -coverprofile=coverage.out
-    - go tool cover -html=coverage.out -o coverage.html
+    - mkdir coverage
+    - go tool cover -html=coverage.out -o coverage/index.html
   coverage: '/coverage: \d+.\d+% of statements/'
-  artifacts:
-    paths:
-      - coverage.html
+  # artifacts:
+  #   expose_as: 'Coverage report'
+  #   paths:
+  #     - coverage.html
+  pages:
+    publish: coverage
