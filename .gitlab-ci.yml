@@ -12,4 +12,5 @@ tests:
     paths:
       - .cache/pkg/mod/
   script:
-    - go test -race -count=1 -bench . ./...
+    - go test -race -count=1 -bench . -cover
+  coverage: '/coverage: \d+.\d+% of statements/'
