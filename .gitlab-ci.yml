@@ -1,0 +1,15 @@
+stages:
+  - test
+
+tests:
+  stage: test
+  image: golang:1.24
+  variables:
+    GOPATH: $CI_PROJECT_DIR/.cache
+  before_script:
+    - mkdir -p .cache
+  cache:
+    paths:
+      - .cache/pkg/mod/
+  script:
+    - go test -race -count=1 -bench . ./...
