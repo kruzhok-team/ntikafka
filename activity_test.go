@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
@@ -47,6 +48,13 @@ func BenchmarkActivityAfter(b *testing.B) {
 
 func TestActivityAfter(t *testing.T) {
 	_, span := noop.NewTracerProvider().Tracer("").Start(context.Background(), "")
+	timeParse := func(src string) time.Time {
+		v, err := time.Parse(time.RFC3339Nano, src)
+		if err != nil {
+			panic(err)
+		}
+		return v
+	}
 	tests := []struct {
 		name    string
 		value   string
@@ -84,15 +92,28 @@ func TestActivityAfter(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:  "valid after",
-			value: `{"payload": {"after": {"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527"}}}`,
+			name: "valid after",
+			value: oneline(`{"payload": {"after": {
+				"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
+				"player_id": "997e0872-ec93-4b3f-b8ef-d86c8a3a7f07",
+				"context_id": "2aeef629-e0e9-479b-95de-6bf4afdd671c",
+				"created_at": "2025-03-03T13:22:47.212818Z"
+			}}}`),
 			want: Activity{
 				Valid: true,
 				Payload: Payload{
 					Valid: true,
-					After: jx.Raw(`{"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527"}`),
+					After: jx.Raw(oneline(`{
+						"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
+						"player_id": "997e0872-ec93-4b3f-b8ef-d86c8a3a7f07",
+						"context_id": "2aeef629-e0e9-479b-95de-6bf4afdd671c",
+						"created_at": "2025-03-03T13:22:47.212818Z"
+					}`)),
 				},
-				ID: uuid.MustParse("db3e8517-5bfd-4a08-ad1e-b80f4880b527"),
+				ID:        uuid.MustParse("db3e8517-5bfd-4a08-ad1e-b80f4880b527"),
+				PlayerID:  uuid.MustParse("997e0872-ec93-4b3f-b8ef-d86c8a3a7f07"),
+				ContextID: uuid.MustParse("2aeef629-e0e9-479b-95de-6bf4afdd671c"),
+				CreatedAt: timeParse("2025-03-03T13:22:47.212818Z"),
 			},
 			wantErr: false,
 		},
@@ -107,15 +128,15 @@ func TestActivityAfter(t *testing.T) {
 				got, gotErr := ActivityAfter(jx.DecodeStr(tt.value), span)
 				if gotErr != nil {
 					if !tt.wantErr {
-						t.Errorf("ActivityAfter() failed: %v", gotErr)
+						t.Errorf("ActivityAfter() вернул ошибку: %v", gotErr)
 					}
 					return
 				}
 				if tt.wantErr {
-					t.Fatal("ActivityAfter() succeeded unexpectedly")
+					t.Fatal("ActivityAfter() неожиданно не вернул ошибку")
 				}
 				if g, w := fmt.Sprintf("%+v", got), fmt.Sprintf("%+v", tt.want); g != w {
-					t.Errorf("ActivityAfter() = %s, want %s", g, w)
+					t.Errorf("ActivityAfter() = %s, ожидалось %s", g, w)
 				}
 			})
 		}

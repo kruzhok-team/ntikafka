@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/go-faster/jx"
@@ -20,6 +21,15 @@ func testFile(fname string) []byte {
 		panic(err)
 	}
 	return input
+}
+
+func oneline(src string) string {
+	lines := strings.Split(src, "\n")
+	patched := make([]string, len(lines))
+	for i, s := range lines {
+		patched[i] = strings.TrimSpace(s)
+	}
+	return strings.Join(patched, " ")
 }
 
 func BenchmarkPayload_Decode(b *testing.B) {
@@ -48,8 +58,42 @@ func TestPayload_Decode(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "empty after",
-			value:   `{"after": null}`,
+			name:    "missing payload",
+			value:   "{}",
+			wantErr: false,
+		},
+		{
+			name:    "empty payload",
+			value:   `{"payload": {}}`,
+			wantErr: false,
+		},
+		{
+			name:    "null payload",
+			value:   `{"payload": null}`,
+			wantErr: true,
+		},
+		{
+			name:    "null after",
+			value:   `{"payload": {"after": null}}`,
+			want:    Payload{Valid: true},
+			wantErr: false,
+		},
+		{
+			name:    "not null after",
+			value:   `{"payload": {"after": {"key": 42}}}}`,
+			want:    Payload{Valid: true, After: jx.Raw(`{"key": 42}`)},
+			wantErr: false,
+		},
+		{
+			name:    "null before",
+			value:   `{"payload": {"before": null}}`,
+			want:    Payload{Valid: true},
+			wantErr: false,
+		},
+		{
+			name:    "not null before",
+			value:   `{"payload": {"before": {"key": 42}}}`,
+			want:    Payload{Valid: true, Before: jx.Raw(`{"key": 42}`)},
 			wantErr: false,
 		},
 		{
@@ -68,6 +112,16 @@ func TestPayload_Decode(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:    "err op",
+			value:   `{"payload": {"op": 1}}`,
+			wantErr: true,
+		},
+		{
+			name:    "err ts_ms",
+			value:   `{"payload": {"ts_ms": "invalid"}}`,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -75,15 +129,16 @@ func TestPayload_Decode(t *testing.T) {
 			gotErr := p.Decode(jx.DecodeStr(tt.value))
 			if gotErr != nil {
 				if !tt.wantErr {
-					t.Errorf("Decode() failed: %v", gotErr)
+					t.Errorf("Decode() вернул ошибку: %v", gotErr)
 				}
+				t.Logf("Содержимое полученной (ожидаемой) ошибки: %q", gotErr)
 				return
 			}
 			if tt.wantErr {
-				t.Fatal("Decode() succeeded unexpectedly")
+				t.Fatal("Decode() неожиданно не вернул ошибку")
 			}
 			if g, w := fmt.Sprintf("%+v", p), fmt.Sprintf("%+v", tt.want); g != w {
-				t.Errorf("Payload = %s, want %s", g, w)
+				t.Errorf("Payload = %s, ожидалось %s", g, w)
 			}
 		})
 	}
