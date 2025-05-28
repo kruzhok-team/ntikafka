@@ -111,7 +111,7 @@ const attrMsgBytes = attribute.Key("message.value.bytes")
 // Враппер для handler дополняющий его спаном телеметрии.
 func consumeMessage(ctx context.Context, tracer trace.Tracer, msg kafka.Message, handler MessageHandler) error {
 	ctx, span := tracer.Start(
-		ctx, "handleMessage", trace.WithAttributes(
+		ctx, "consumeMessage", trace.WithAttributes(
 			attrMsgBytes.Int(len(msg.Value)),
 		),
 	)
