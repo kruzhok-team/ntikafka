@@ -20,7 +20,7 @@ var (
 //
 // Топик: berloga_activities.public.activities
 type Activity struct {
-	Payload   Payload
+	Payload   Value
 	Valid     bool
 	ID        [16]byte
 	PlayerID  [16]byte

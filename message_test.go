@@ -36,7 +36,7 @@ func BenchmarkPayload_Decode(b *testing.B) {
 	input := testFile("debezium_message_value.json")
 	d := jx.DecodeBytes(input)
 	b.ReportAllocs()
-	var p Payload
+	var p Value
 	for b.Loop() {
 		d.ResetBytes(input)
 		if err := p.Decode(d); err != nil {
@@ -49,7 +49,7 @@ func TestPayload_Decode(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   string
-		want    Payload
+		want    Value
 		wantErr bool
 	}{
 		{
@@ -75,31 +75,31 @@ func TestPayload_Decode(t *testing.T) {
 		{
 			name:    "null after",
 			value:   `{"payload": {"after": null}}`,
-			want:    Payload{Valid: true},
+			want:    Value{Valid: true},
 			wantErr: false,
 		},
 		{
 			name:    "not null after",
 			value:   `{"payload": {"after": {"key": 42}}}}`,
-			want:    Payload{Valid: true, After: jx.Raw(`{"key": 42}`)},
+			want:    Value{Valid: true, After: jx.Raw(`{"key": 42}`)},
 			wantErr: false,
 		},
 		{
 			name:    "null before",
 			value:   `{"payload": {"before": null}}`,
-			want:    Payload{Valid: true},
+			want:    Value{Valid: true},
 			wantErr: false,
 		},
 		{
 			name:    "not null before",
 			value:   `{"payload": {"before": {"key": 42}}}`,
-			want:    Payload{Valid: true, Before: jx.Raw(`{"key": 42}`)},
+			want:    Value{Valid: true, Before: jx.Raw(`{"key": 42}`)},
 			wantErr: false,
 		},
 		{
 			name:  "from file",
 			value: string(testFile("debezium_message_value.json")),
-			want: Payload{
+			want: Value{
 				Valid:     true,
 				Timestamp: 1741008167284,
 				Operation: DebeziumOperationUpdate,
@@ -125,7 +125,7 @@ func TestPayload_Decode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var p Payload
+			var p Value
 			gotErr := p.Decode(jx.DecodeStr(tt.value))
 			if gotErr != nil {
 				if !tt.wantErr {

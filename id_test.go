@@ -15,7 +15,7 @@ func TestID32After(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   string
-		want    ID32
+		want    ID32Value
 		wantErr bool
 	}{
 		{
@@ -31,19 +31,17 @@ func TestID32After(t *testing.T) {
 		{
 			name:  "valid payload",
 			value: `{"payload": {"after": {"id": 42}}}`,
-			want: ID32{
-				ID:      42,
-				Valid:   true,
-				Payload: Payload{Valid: true, After: jx.Raw(`{"id": 42}`)},
+			want: ID32Value{
+				ID:      ID32{ID: 42, Valid: true},
+				Payload: Value{Valid: true, After: jx.Raw(`{"id": 42}`)},
 			},
 		},
 		{
 			name:  "valid schemaless",
 			value: `{"after": {"id": 42}}`,
-			want: ID32{
-				ID:      42,
-				Valid:   true,
-				Payload: Payload{Valid: true, After: jx.Raw(`{"id": 42}`)},
+			want: ID32Value{
+				ID:      ID32{ID: 42, Valid: true},
+				Payload: Value{Valid: true, After: jx.Raw(`{"id": 42}`)},
 			},
 		},
 	}

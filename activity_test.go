@@ -86,19 +86,19 @@ func TestActivityAfter(t *testing.T) {
 		{
 			name:    "missing after",
 			value:   `{"payload": {"before": {}}}`,
-			want:    Activity{Payload: Payload{Valid: true, Before: jx.Raw(`{}`)}},
+			want:    Activity{Payload: Value{Valid: true, Before: jx.Raw(`{}`)}},
 			wantErr: false,
 		},
 		{
 			name:    "null after",
 			value:   `{"payload": {"after": null}}`,
-			want:    Activity{Payload: Payload{Valid: true}},
+			want:    Activity{Payload: Value{Valid: true}},
 			wantErr: false,
 		},
 		{
 			name:    "empty object after",
 			value:   `{"payload": {"after": {}}}`,
-			want:    Activity{Payload: Payload{Valid: true, After: jx.Raw(`{}`)}},
+			want:    Activity{Payload: Value{Valid: true, After: jx.Raw(`{}`)}},
 			wantErr: false,
 		},
 		{
@@ -111,7 +111,7 @@ func TestActivityAfter(t *testing.T) {
 			}}}`),
 			want: Activity{
 				Valid: true,
-				Payload: Payload{
+				Payload: Value{
 					Valid: true,
 					After: jx.Raw(oneline(`{
 						"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
@@ -148,7 +148,7 @@ func TestActivityAfter(t *testing.T) {
 			}`),
 			want: Activity{
 				Valid: true,
-				Payload: Payload{
+				Payload: Value{
 					Valid:     true,
 					Timestamp: 1748417064848,
 					Operation: DebeziumOperationRead,

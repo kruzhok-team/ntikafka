@@ -44,11 +44,15 @@ const (
 	DebeziumOperationMessage  DebeziumOperation = "m"
 )
 
-// Payload представляет данные в теле сообщения под ключом payload.
+// Value представляет тело сообщения, записанное коннектором Debezium.
 //
-// Before и After не nil, если в payload имеется одноименный ключ,
+// При наличии ключей schema или payload,
+// объект трактуется как значение со схемой,
+// а свойства структры заполнятся из ключа payload.
+//
+// Before и After не nil, если имеются соответствующие ключи,
 // а также, если значение под этим ключем не null.
-type Payload struct {
+type Value struct {
 	Valid     bool
 	Timestamp int64
 	Operation DebeziumOperation
@@ -56,7 +60,7 @@ type Payload struct {
 	After     jx.Raw
 }
 
-func (p *Payload) Decode(d *jx.Decoder) error {
+func (p *Value) Decode(d *jx.Decoder) error {
 	if t := d.Next(); t == jx.Null || t == jx.Invalid {
 		return nil
 	}
@@ -76,7 +80,7 @@ func (p *Payload) Decode(d *jx.Decoder) error {
 	})
 }
 
-func (p *Payload) decodePayloadKey(d *jx.Decoder, key []byte) (err error) {
+func (p *Value) decodePayloadKey(d *jx.Decoder, key []byte) (err error) {
 	p.Valid = true
 	switch string(key) {
 	case "before":

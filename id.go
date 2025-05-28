@@ -9,19 +9,20 @@ import (
 
 var attrID = attribute.Key("id")
 
+// ID32 представляет объект из которого декодируется только поле id.
+// Такой объект может декодироваться как из ключа сообщения, так и из его тела.
 type ID32 struct {
-	ID      int32
-	Valid   bool
-	Payload Payload
+	ID    int32
+	Valid bool
 }
 
-func (a *ID32) Decode(d *jx.Decoder) error {
+func (s *ID32) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
-		a.Valid = true
+		s.Valid = true
 		var err error
 		switch string(key) {
 		case "id":
-			a.ID, err = d.Int32()
+			s.ID, err = d.Int32()
 		default:
 			return d.Skip()
 		}
@@ -32,8 +33,14 @@ func (a *ID32) Decode(d *jx.Decoder) error {
 	})
 }
 
-func ID32After(d *jx.Decoder, span trace.Span) (ID32, error) {
-	var s ID32
+// Представляет объект с ключем id, находящийся в значении сообщения.
+type ID32Value struct {
+	ID      ID32
+	Payload Value
+}
+
+func ID32After(d *jx.Decoder, span trace.Span) (ID32Value, error) {
+	var s ID32Value
 	if err := s.Payload.Decode(d); err != nil {
 		return s, err
 	}
@@ -44,17 +51,17 @@ func ID32After(d *jx.Decoder, span trace.Span) (ID32, error) {
 		return s, nil
 	}
 	d.ResetBytes(s.Payload.After)
-	if err := s.Decode(d); err != nil {
+	if err := s.ID.Decode(d); err != nil {
 		return s, err
 	}
-	if !s.Valid {
+	if !s.ID.Valid {
 		if span != nil {
 			span.AddEvent("отсутствует значение payload.after")
 		}
 		return s, nil
 	}
 	if span != nil {
-		span.SetAttributes(attrID.Int(int(s.ID)))
+		span.SetAttributes(attrID.Int(int(s.ID.ID)))
 	}
 	return s, nil
 }
