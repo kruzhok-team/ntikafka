@@ -60,45 +60,50 @@ func (p *Payload) Decode(d *jx.Decoder) error {
 	if t := d.Next(); t == jx.Null || t == jx.Invalid {
 		return nil
 	}
-	var err error
-	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
-		if string(key) != "payload" {
-			return d.Skip()
+	return d.ObjBytes(func(d *jx.Decoder, key []byte) (err error) {
+		switch string(key) {
+		case "schema":
+			err = d.Skip()
+		case "payload":
+			err = d.ObjBytes(p.decodePayloadKey)
+		default:
+			err = p.decodePayloadKey(d, key)
 		}
-		err = d.ObjBytes(func(d *jx.Decoder, key []byte) error {
-			p.Valid = true
-			switch string(key) {
-			case "before":
-				if d.Next() == jx.Null {
-					err = d.Skip()
-					break
-				}
-				p.Before, err = d.Raw()
-			case "after":
-				if d.Next() == jx.Null {
-					err = d.Skip()
-					break
-				}
-				p.After, err = d.Raw()
-			case "op":
-				v, err := d.Str()
-				if err != nil {
-					return errors.Wrap(err, "op")
-				}
-				p.Operation = DebeziumOperation(v)
-			case "ts_ms":
-				p.Timestamp, err = d.Int64()
-			default:
-				err = d.Skip()
-			}
-			if err != nil {
-				err = errors.Wrap(err, string(key))
-			}
-			return err
-		})
 		if err != nil {
-			err = errors.Wrap(err, "payload")
+			err = errors.Wrap(err, string(key))
 		}
 		return err
 	})
+}
+
+func (p *Payload) decodePayloadKey(d *jx.Decoder, key []byte) (err error) {
+	p.Valid = true
+	switch string(key) {
+	case "before":
+		if d.Next() == jx.Null {
+			err = d.Skip()
+			break
+		}
+		p.Before, err = d.Raw()
+	case "after":
+		if d.Next() == jx.Null {
+			err = d.Skip()
+			break
+		}
+		p.After, err = d.Raw()
+	case "op":
+		v, err := d.Str()
+		if err != nil {
+			return errors.Wrap(err, "op")
+		}
+		p.Operation = DebeziumOperation(v)
+	case "ts_ms":
+		p.Timestamp, err = d.Int64()
+	default:
+		err = d.Skip()
+	}
+	if err != nil {
+		err = errors.Wrap(err, string(key))
+	}
+	return err
 }

@@ -16,7 +16,9 @@ var (
 	attrContextID  = attribute.Key("context_id")
 )
 
-// Activity представляет топик: berloga_activities.public.activities
+// Активность игрока сервиса berloga_activities.
+//
+// Топик: berloga_activities.public.activities
 type Activity struct {
 	Payload   Payload
 	Valid     bool

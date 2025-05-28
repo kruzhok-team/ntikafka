@@ -2,11 +2,11 @@ package ntikafka
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/go-faster/jx"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -31,7 +31,7 @@ func BenchmarkActivityAfter(b *testing.B) {
 		})
 	}
 
-	bench("filled", []byte(`{
+	bench("filled_payload", []byte(`{
 		"payload": {
 			"before": null,
 			"after": {
@@ -40,6 +40,16 @@ func BenchmarkActivityAfter(b *testing.B) {
 				"context_id": "2aeef629-e0e9-479b-95de-6bf4afdd671c",
 				"created_at": "2025-03-03T13:22:47.212818Z"
 			}
+		}
+	}`))
+
+	bench("filled_schemaless", []byte(`{
+		"before": null,
+		"after": {
+			"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
+			"player_id": "997e0872-ec93-4b3f-b8ef-d86c8a3a7f07",
+			"context_id": "2aeef629-e0e9-479b-95de-6bf4afdd671c",
+			"created_at": "2025-03-03T13:22:47.212818Z"
 		}
 	}`))
 
@@ -117,6 +127,49 @@ func TestActivityAfter(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "without schema",
+			value: oneline(`{
+				"before":null,
+				"after":{
+					"id":"49880c1e-6400-4d11-bb06-854721e8a56c",
+					"created_at":"2023-11-21T17:46:45.062924Z",
+					"context_id":"9b9a23ed-c637-439b-84cd-b10bec5855c7",
+					"player_id":"6c66bd93-8c8f-4cc1-b27f-e78ab44681e5",
+					"scores":null,
+					"quarantine":null,
+					"artefact_id":null,
+					"app_version":"test.0.0"
+				},
+				"op":"r",
+				"ts_ms":1748417064848,
+				"ts_us":1748417064848402,
+				"ts_ns":1748417064848402160
+			}`),
+			want: Activity{
+				Valid: true,
+				Payload: Payload{
+					Valid:     true,
+					Timestamp: 1748417064848,
+					Operation: DebeziumOperationRead,
+					After: jx.Raw(oneline(`{
+						"id":"49880c1e-6400-4d11-bb06-854721e8a56c",
+						"created_at":"2023-11-21T17:46:45.062924Z",
+						"context_id":"9b9a23ed-c637-439b-84cd-b10bec5855c7",
+						"player_id":"6c66bd93-8c8f-4cc1-b27f-e78ab44681e5",
+						"scores":null,
+						"quarantine":null,
+						"artefact_id":null,
+						"app_version":"test.0.0"
+					}`)),
+				},
+				ID:        uuid.MustParse("49880c1e-6400-4d11-bb06-854721e8a56c"),
+				PlayerID:  uuid.MustParse("6c66bd93-8c8f-4cc1-b27f-e78ab44681e5"),
+				ContextID: uuid.MustParse("9b9a23ed-c637-439b-84cd-b10bec5855c7"),
+				CreatedAt: timeParse("2023-11-21T17:46:45.062924Z"),
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		for _, span := range []trace.Span{span, nil} {
@@ -135,8 +188,8 @@ func TestActivityAfter(t *testing.T) {
 				if tt.wantErr {
 					t.Fatal("ActivityAfter() неожиданно не вернул ошибку")
 				}
-				if g, w := fmt.Sprintf("%+v", got), fmt.Sprintf("%+v", tt.want); g != w {
-					t.Errorf("ActivityAfter() = %s, ожидалось %s", g, w)
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Errorf("ActivityAfter() = %s", diff)
 				}
 			})
 		}

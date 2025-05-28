@@ -5,6 +5,7 @@ go 1.24.3
 require (
 	github.com/go-faster/errors v0.7.1
 	github.com/go-faster/jx v1.1.0
+	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/segmentio/kafka-go v0.4.43
 	go.opentelemetry.io/otel v1.36.0
