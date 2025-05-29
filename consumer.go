@@ -160,7 +160,7 @@ func consumeMessage(ctx context.Context, tracer trace.Tracer, msg kafka.Message,
 			return err
 		}
 		span.SetStatus(codes.Error, "обработчик сообщения вернул ошибку")
-		var derr DecodeError
+		var derr *DecodeError
 		if errors.As(err, &derr) {
 			span.RecordError(err, trace.WithAttributes(
 				attrKeyContent.String(string(msg.Key)),
