@@ -108,6 +108,7 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 
 const (
 	attrOffset       = attribute.Key("message.offset")
+	attrPartition    = attribute.Key("message.partition")
 	attrKeyLength    = attribute.Key("message.key.length")
 	attrValueLength  = attribute.Key("message.value.length")
 	attrKeyContent   = attribute.Key("message.key.content")
@@ -146,6 +147,7 @@ func consumeMessage(ctx context.Context, tracer trace.Tracer, msg kafka.Message,
 		trace.WithSpanKind(trace.SpanKindConsumer),
 		trace.WithAttributes(
 			attrOffset.Int64(msg.Offset),
+			attrPartition.Int(msg.Partition),
 			attrKeyLength.Int(len(msg.Key)),
 			attrValueLength.Int(len(msg.Value)),
 		),
