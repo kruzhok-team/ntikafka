@@ -123,6 +123,7 @@ func consumeMessage(ctx context.Context, tracer trace.Tracer, msg kafka.Message,
 			return err
 		}
 		span.SetStatus(codes.Error, "обработчик сообщения вернул ошибку")
+		span.RecordError(err)
 		return err
 	}
 	span.SetStatus(codes.Ok, "обработка сообщения успешно завершена")
