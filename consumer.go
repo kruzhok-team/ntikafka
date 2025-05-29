@@ -106,13 +106,44 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 	}
 }
 
-const attrMsgBytes = attribute.Key("message.value.bytes")
+const (
+	attrKeyLength    = attribute.Key("message.key.length")
+	attrValueLength  = attribute.Key("message.value.length")
+	attrKeyContent   = attribute.Key("message.key.content")
+	attrValueContent = attribute.Key("message.value.content")
+)
+
+type DataSource string
+
+const (
+	DecodeKey   DataSource = "key"
+	DecodeValue DataSource = "value"
+)
+
+// Ошибка декодирования.
+//
+// При ее возврате из MessageHandler,
+// consumer дополнит репорт содержимым ключа и значения.
+type DecodeError struct {
+	Src DataSource
+	Err error
+}
+
+// Error implements error.
+func (d *DecodeError) Error() string {
+	return fmt.Sprintf("decode message %s: %v", d.Src, d.Err)
+}
+
+func (d *DecodeError) Unwrap() error {
+	return d.Err
+}
 
 // Враппер для handler дополняющий его спаном телеметрии.
 func consumeMessage(ctx context.Context, tracer trace.Tracer, msg kafka.Message, handler MessageHandler) error {
 	ctx, span := tracer.Start(
 		ctx, "consumeMessage", trace.WithAttributes(
-			attrMsgBytes.Int(len(msg.Value)),
+			attrKeyLength.Int(len(msg.Key)),
+			attrValueLength.Int(len(msg.Value)),
 		),
 	)
 	defer span.End()
@@ -123,7 +154,15 @@ func consumeMessage(ctx context.Context, tracer trace.Tracer, msg kafka.Message,
 			return err
 		}
 		span.SetStatus(codes.Error, "обработчик сообщения вернул ошибку")
-		span.RecordError(err)
+		var derr DecodeError
+		if errors.As(err, &derr) {
+			span.RecordError(err, trace.WithAttributes(
+				attrKeyContent.String(string(msg.Key)),
+				attrValueContent.String(string(msg.Value)),
+			))
+		} else {
+			span.RecordError(err)
+		}
 		return err
 	}
 	span.SetStatus(codes.Ok, "обработка сообщения успешно завершена")
