@@ -141,7 +141,9 @@ func (d *DecodeError) Unwrap() error {
 // Враппер для handler дополняющий его спаном телеметрии.
 func consumeMessage(ctx context.Context, tracer trace.Tracer, msg kafka.Message, handler MessageHandler) error {
 	ctx, span := tracer.Start(
-		ctx, "consumeMessage", trace.WithAttributes(
+		ctx, "consumeMessage",
+		trace.WithSpanKind(trace.SpanKindConsumer),
+		trace.WithAttributes(
 			attrKeyLength.Int(len(msg.Key)),
 			attrValueLength.Int(len(msg.Value)),
 		),
