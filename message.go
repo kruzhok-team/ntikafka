@@ -24,6 +24,17 @@ func DecodeUUID(d *jx.Decoder, dst *[16]byte) error {
 	return nil
 }
 
+type Date time.Time
+
+func (s *Date) Decode(d *jx.Decoder) error {
+	t, err := DecodeDate(d)
+	if err != nil {
+		return err
+	}
+	*s = Date(t)
+	return nil
+}
+
 func DecodeDate(d *jx.Decoder) (time.Time, error) {
 	var t time.Time
 	raw, err := d.StrBytes()

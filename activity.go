@@ -5,27 +5,19 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-	"github.com/google/uuid"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-)
-
-var (
-	attrActivityID = attribute.Key("activity_id")
-	attrPlayerID   = attribute.Key("player_id")
-	attrContextID  = attribute.Key("context_id")
 )
 
 // Активность игрока сервиса berloga_activities.
 //
 // Топик: berloga_activities.public.activities
 type Activity struct {
-	Payload   Value
-	Valid     bool
-	ID        [16]byte
-	PlayerID  [16]byte
-	ContextID [16]byte
+	ID        UUID
+	PlayerID  UUID
+	ContextID UUID
 	CreatedAt time.Time
+	Valid     bool
+	Payload   Value
 }
 
 func (a *Activity) Decode(d *jx.Decoder) error {
@@ -34,15 +26,15 @@ func (a *Activity) Decode(d *jx.Decoder) error {
 		var err error
 		switch string(key) {
 		case "id":
-			err = DecodeUUID(d, &a.ID)
+			err = a.ID.Decode(d)
 		case "player_id":
-			err = DecodeUUID(d, &a.PlayerID)
+			err = a.PlayerID.Decode(d)
 		case "context_id":
-			err = DecodeUUID(d, &a.ContextID)
+			err = a.ContextID.Decode(d)
 		case "created_at":
 			a.CreatedAt, err = DecodeDate(d)
 		default:
-			return d.Skip()
+			err = d.Skip()
 		}
 		if err != nil {
 			err = errors.Wrap(err, string(key))
@@ -74,9 +66,9 @@ func ActivityAfter(d *jx.Decoder, span trace.Span) (Activity, error) {
 	}
 	if span != nil {
 		span.SetAttributes(
-			attrActivityID.String(uuid.UUID(act.ID).String()),
-			attrPlayerID.String(uuid.UUID(act.PlayerID).String()),
-			attrContextID.String(uuid.UUID(act.ContextID).String()),
+			attrActivityID.String(act.ID.String()),
+			attrPlayerID.String(act.PlayerID.String()),
+			attrContextID.String(act.ContextID.String()),
 		)
 	}
 	return act, nil

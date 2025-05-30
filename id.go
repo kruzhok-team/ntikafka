@@ -3,11 +3,8 @@ package ntikafka
 import (
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
-
-var attrID = attribute.Key("id")
 
 // ID32 представляет объект из которого декодируется только поле id.
 // Такой объект может декодироваться как из ключа сообщения, так и из его тела.
@@ -24,7 +21,7 @@ func (s *ID32) Decode(d *jx.Decoder) error {
 		case "id":
 			s.ID, err = d.Int32()
 		default:
-			return d.Skip()
+			err = d.Skip()
 		}
 		if err != nil {
 			err = errors.Wrap(err, string(key))

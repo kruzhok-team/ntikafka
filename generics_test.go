@@ -1,0 +1,85 @@
+package ntikafka
+
+import (
+	"testing"
+	"time"
+
+	"github.com/go-faster/jx"
+	"github.com/google/uuid"
+)
+
+func parseUUID(s string) UUID {
+	return (UUID)(uuid.MustParse(s))
+}
+
+func parseTime(s string) time.Time {
+	v, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func BenchmarkNullInt32_Decode(b *testing.B) {
+	for _, data := range []string{`null`, `42`} {
+		b.Run(data, func(b *testing.B) {
+			src := []byte(data)
+			d := jx.DecodeBytes(src)
+			var v NullInt32
+			b.ReportAllocs()
+			for b.Loop() {
+				d.ResetBytes(src)
+				if err := v.Decode(d); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkNull_Decode(b *testing.B) {
+	for _, data := range []string{`null`, `42`} {
+		b.Run("value/int32/"+data, func(b *testing.B) {
+			src := []byte(data)
+			d := jx.DecodeBytes(src)
+			b.ReportAllocs()
+			for b.Loop() {
+				d.ResetBytes(src)
+				var v Null[int32]
+				if err := v.DecodeValue(d, DecodeInt32); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+	for _, data := range []string{`null`, `"a9af45a7-47fd-42ee-9983-1e6c9284d386"`} {
+		b.Run("receiver/[16]byte/"+data[:4], func(b *testing.B) {
+			src := []byte(data)
+			d := jx.DecodeBytes(src)
+			b.ReportAllocs()
+			for b.Loop() {
+				d.ResetBytes(src)
+				var v Null[[16]byte]
+				if err := v.DecodeReceiver(d, func(d *jx.Decoder) error {
+					return DecodeUUID(d, &v.V)
+				}); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+	for _, data := range []string{`null`, `"a9af45a7-47fd-42ee-9983-1e6c9284d386"`} {
+		b.Run("receiver/UUID/"+data[:4], func(b *testing.B) {
+			src := []byte(data)
+			d := jx.DecodeBytes(src)
+			b.ReportAllocs()
+			for b.Loop() {
+				d.ResetBytes(src)
+				var v Null[UUID]
+				if err := v.DecodeReceiver(d, v.V.Decode); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
