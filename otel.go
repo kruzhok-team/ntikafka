@@ -9,6 +9,7 @@ var (
 	attrContextID  = attribute.Key("context_id")
 	attrEventID    = attribute.Key("event_id")
 	attrPersonID   = attribute.Key("person_id")
+	attrTeamID     = attribute.Key("team_id")
 )
 
 var (

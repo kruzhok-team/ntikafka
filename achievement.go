@@ -82,6 +82,9 @@ func AchievementAfter(d *jx.Decoder, span trace.Span) (Achievement, error) {
 		if ach.PersonID.Valid {
 			span.SetAttributes(attrPersonID.Int(int(ach.PersonID.V)))
 		}
+		if ach.TeamID.Valid {
+			span.SetAttributes(attrTeamID.Int(int(ach.TeamID.V)))
+		}
 	}
 	return ach, nil
 }
