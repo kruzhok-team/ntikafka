@@ -100,7 +100,7 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 		if err := consumeMessage(ctx, tracer, msg, handler); err != nil {
 			return err
 		}
-		if err = reader.CommitMessages(ctx, msg); err != nil {
+		if err = reader.CommitMessages(context.WithoutCancel(ctx), msg); err != nil {
 			return err
 		}
 	}
