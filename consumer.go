@@ -74,6 +74,7 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 		SASLMechanism: mechanism,
 		Timeout:       dialerTimeout,
 		DualStack:     true,
+		ClientID:      os.Getenv("KAFKA_CLIENT_ID"),
 	}
 	if tlsConfig != nil {
 		dialer.TLS = tlsConfig
