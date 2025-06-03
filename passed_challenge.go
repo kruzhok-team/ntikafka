@@ -5,13 +5,7 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-)
-
-var (
-	attrChallengeID = attribute.Key("challenge_id")
-	attrPassedAt    = attribute.Key("passed_at")
 )
 
 type PassedChallenge struct {

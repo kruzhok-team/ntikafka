@@ -25,6 +25,7 @@ func (a *Activity) SetAttributes(span trace.Span) {
 		attrActivityID.String(a.ID.String()),
 		attrPlayerID.String(a.PlayerID.String()),
 		attrContextID.String(a.ContextID.String()),
+		attrCreatedAt.String(a.CreatedAt.String()),
 	)
 }
 

@@ -24,6 +24,8 @@ type Achievement struct {
 func (a *Achievement) SetAttributes(span trace.Span) {
 	span.SetAttributes(
 		attrAchievementID.Int(int(a.ID)),
+		attrCreatedAt.String(a.CreatedAt.String()),
+		attrUpdatedAt.String(a.UpdatedAt.String()),
 		attrAchievementStatus.String(a.Status),
 		attrEventID.Int(int(a.EventID)),
 		attrAchievementRoleID.Int(int(a.RoleID)),

@@ -49,6 +49,11 @@ func DecodeInt32(d *jx.Decoder) (int32, error) {
 	return d.Int32()
 }
 
+// DecodeFloat64 для использования в Null[float64].DecodeValue.
+func DecodeFloat64(d *jx.Decoder) (float64, error) {
+	return d.Float64()
+}
+
 type NullInt32 struct {
 	V     int32
 	Valid bool

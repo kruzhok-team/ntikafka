@@ -14,7 +14,6 @@ import (
 	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/scram"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -106,15 +105,6 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 		}
 	}
 }
-
-const (
-	attrOffset       = attribute.Key("message.offset")
-	attrPartition    = attribute.Key("message.partition")
-	attrKeyLength    = attribute.Key("message.key.length")
-	attrValueLength  = attribute.Key("message.value.length")
-	attrKeyContent   = attribute.Key("message.key.content")
-	attrValueContent = attribute.Key("message.value.content")
-)
 
 type DataSource string
 
