@@ -13,6 +13,10 @@ type ID32 struct {
 	Valid bool
 }
 
+func (s *ID32) SetAttributes(span trace.Span) {
+	span.SetAttributes(attrID.Int(int(s.ID)))
+}
+
 func (s *ID32) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
 		s.Valid = true
@@ -58,7 +62,7 @@ func ID32After(d *jx.Decoder, span trace.Span) (ID32Value, error) {
 		return s, nil
 	}
 	if span != nil {
-		span.SetAttributes(attrID.Int(int(s.ID.ID)))
+		s.ID.SetAttributes(span)
 	}
 	return s, nil
 }

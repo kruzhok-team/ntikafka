@@ -21,6 +21,21 @@ type Achievement struct {
 	Payload   Value
 }
 
+func (a *Achievement) SetAttributes(span trace.Span) {
+	span.SetAttributes(
+		attrAchievementID.Int(int(a.ID)),
+		attrAchievementStatus.String(a.Status),
+		attrEventID.Int(int(a.EventID)),
+		attrAchievementRoleID.Int(int(a.RoleID)),
+	)
+	if a.PersonID.Valid {
+		span.SetAttributes(attrPersonID.Int(int(a.PersonID.V)))
+	}
+	if a.TeamID.Valid {
+		span.SetAttributes(attrTeamID.Int(int(a.TeamID.V)))
+	}
+}
+
 func (a *Achievement) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, k []byte) (err error) {
 		a.Valid = true
@@ -73,18 +88,7 @@ func AchievementAfter(d *jx.Decoder, span trace.Span) (Achievement, error) {
 		return ach, nil
 	}
 	if span != nil {
-		span.SetAttributes(
-			attrAchievementID.Int(int(ach.ID)),
-			attrAchievementStatus.String(ach.Status),
-			attrEventID.Int(int(ach.EventID)),
-			attrAchievementRoleID.Int(int(ach.RoleID)),
-		)
-		if ach.PersonID.Valid {
-			span.SetAttributes(attrPersonID.Int(int(ach.PersonID.V)))
-		}
-		if ach.TeamID.Valid {
-			span.SetAttributes(attrTeamID.Int(int(ach.TeamID.V)))
-		}
+		ach.SetAttributes(span)
 	}
 	return ach, nil
 }

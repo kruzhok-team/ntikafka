@@ -7,6 +7,7 @@ import (
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func DecodeUUID(d *jx.Decoder, dst *[16]byte) error {
@@ -121,4 +122,28 @@ func (p *Value) decodePayloadKey(d *jx.Decoder, key []byte) (err error) {
 		err = errors.Wrap(err, string(key))
 	}
 	return err
+}
+
+type Decoder interface {
+	Decode(*jx.Decoder) error
+}
+
+func DecodeAfter(d *jx.Decoder, span trace.Span, v *Value, s Decoder, valid *bool) error {
+	if err := v.Decode(d); err != nil {
+		return err
+	}
+	if v.After == nil {
+		if span != nil {
+			span.AddEvent("отсутствует значение payload.after")
+		}
+		return nil
+	}
+	d.ResetBytes(v.After)
+	if err := s.Decode(d); err != nil {
+		return err
+	}
+	if !*valid && span != nil {
+		span.AddEvent("отсутствует значение payload.after")
+	}
+	return nil
 }

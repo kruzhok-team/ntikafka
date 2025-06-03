@@ -20,6 +20,14 @@ type Activity struct {
 	Payload   Value
 }
 
+func (a *Activity) SetAttributes(span trace.Span) {
+	span.SetAttributes(
+		attrActivityID.String(a.ID.String()),
+		attrPlayerID.String(a.PlayerID.String()),
+		attrContextID.String(a.ContextID.String()),
+	)
+}
+
 func (a *Activity) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
 		a.Valid = true
@@ -65,11 +73,7 @@ func ActivityAfter(d *jx.Decoder, span trace.Span) (Activity, error) {
 		return act, nil
 	}
 	if span != nil {
-		span.SetAttributes(
-			attrActivityID.String(act.ID.String()),
-			attrPlayerID.String(act.PlayerID.String()),
-			attrContextID.String(act.ContextID.String()),
-		)
+		act.SetAttributes(span)
 	}
 	return act, nil
 }

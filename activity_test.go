@@ -10,17 +10,34 @@ import (
 
 func BenchmarkActivityAfter(b *testing.B) {
 	bench := func(name string, data []byte) {
-		b.Run(name, func(b *testing.B) {
-			d := jx.DecodeBytes(data)
-			b.ReportAllocs()
-			for b.Loop() {
-				d.ResetBytes(data)
-				_, err := ActivityAfter(d, nil)
-				if err != nil {
-					b.Fatal(err)
+		for name, span := range iterspan(name) {
+			b.Run(name, func(b *testing.B) {
+				d := jx.DecodeBytes(data)
+				b.ReportAllocs()
+				for b.Loop() {
+					d.ResetBytes(data)
+					_, err := ActivityAfter(d, span)
+					if err != nil {
+						b.Fatal(err)
+					}
 				}
-			}
-		})
+			})
+			b.Run(name+"/Ptr", func(b *testing.B) {
+				act := &Activity{}
+				d := jx.DecodeBytes(data)
+				b.ReportAllocs()
+				for b.Loop() {
+					d.ResetBytes(data)
+					err := DecodeAfter(d, span, &(act).Payload, act, &act.Valid)
+					if err != nil {
+						b.Fatal(err)
+					}
+					if span != nil && act.Valid {
+						act.SetAttributes(span)
+					}
+				}
+			})
+		}
 	}
 
 	bench("payload_minimal", []byte(`{
