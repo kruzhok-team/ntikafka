@@ -7,6 +7,7 @@ import "go.opentelemetry.io/otel/attribute"
  */
 
 const (
+	attrID                = attribute.Key("id") // Ключ для неизвестного типа идентификатора
 	attrActivityID        = attribute.Key("activity_id")
 	attrChallengeID       = attribute.Key("challenge_id")
 	attrComplexchResultID = attribute.Key("complexch_result_id")
