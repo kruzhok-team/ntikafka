@@ -11,8 +11,6 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/segmentio/kafka-go"
-	"github.com/segmentio/kafka-go/sasl"
-	"github.com/segmentio/kafka-go/sasl/scram"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -33,11 +31,8 @@ func init() {
 	}
 }
 
-type config struct {
-	host  string
-	user  string
-	pass  string
-	topic string
+type consumeCfg struct {
+	conn  connectCfg
 	group string
 }
 
@@ -48,12 +43,12 @@ type MessageHandler func(context.Context, kafka.Message) error
 
 // // Запуск Kafka Consumer в составе группы group и топика topic.
 func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler) (err error) {
-	cfg := config{}
+	cfg := consumeCfg{}
+	cfg.conn, err = newConnectCfg()
+	if err != nil {
+		return err
+	}
 	for key, prop := range map[string]*string{
-		"KAFKA_HOST":  &cfg.host,
-		"KAFKA_USER":  &cfg.user,
-		"KAFKA_PASS":  &cfg.pass,
-		"KAFKA_TOPIC": &cfg.topic,
 		"KAFKA_GROUP": &cfg.group,
 	} {
 		v := os.Getenv(key)
@@ -62,12 +57,9 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 		}
 		*prop = v
 	}
-	var mechanism sasl.Mechanism
-	if cfg.user != "" {
-		mechanism, err = scram.Mechanism(scram.SHA512, cfg.user, cfg.pass)
-		if err != nil {
-			return errors.Wrap(err, "scram.Mechanism")
-		}
+	mechanism, err := cfg.conn.mechanism()
+	if err != nil {
+		return err
 	}
 	dialer := &kafka.Dialer{
 		SASLMechanism: mechanism,
@@ -80,8 +72,8 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 	}
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Dialer:  dialer,
-		Brokers: []string{cfg.host},
-		Topic:   cfg.topic,
+		Brokers: []string{cfg.conn.host},
+		Topic:   cfg.conn.topic,
 		GroupID: cfg.group,
 		ErrorLogger: kafka.LoggerFunc(func(msg string, attrs ...any) {
 			netErrLog.ErrorContext(ctx, fmt.Sprintf(msg, attrs...))
