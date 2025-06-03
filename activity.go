@@ -16,8 +16,9 @@ type Activity struct {
 	PlayerID  UUID
 	ContextID UUID
 	CreatedAt time.Time
-	Valid     bool
-	Payload   Value
+
+	Valid   bool
+	Payload Value
 }
 
 func (a *Activity) SetAttributes(span trace.Span) {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-faster/jx"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 )
 
@@ -79,6 +80,45 @@ func BenchmarkNull_Decode(b *testing.B) {
 				if err := v.DecodeReceiver(d, v.V.Decode); err != nil {
 					b.Fatal(err)
 				}
+			}
+		})
+	}
+}
+
+func TestPoint(t *testing.T) {
+	d := jx.Decode(nil, 512)
+	for _, tt := range []struct {
+		name  string
+		input string
+		want  Point
+	}{
+		{
+			name:  "null",
+			input: `null`,
+		},
+		{
+			name: "ok",
+			input: `{
+				"x": 82.993774,
+				"y": 55.065243,
+				"wkb": "AQEAAABeZ0P+mb9UQH+l8+FZiEtA",
+				"srid": null
+			}`,
+			want: Point{
+				X:     82.993774,
+				Y:     55.065243,
+				Valid: true,
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var p Point
+			d.ResetBytes([]byte(tt.input))
+			if err := p.Decode(d); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(tt.want, p); diff != "" {
+				t.Errorf("Результат Decode() содержит отличия: %s", diff)
 			}
 		})
 	}

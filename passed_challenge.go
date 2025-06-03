@@ -13,8 +13,9 @@ type PassedChallenge struct {
 	ChallengeID int32
 	PlayerID    UUID
 	ActivityID  UUID
-	Valid       bool
-	Payload     Value
+
+	Valid   bool
+	Payload Value
 }
 
 func (s *PassedChallenge) SetAttributes(span trace.Span) {

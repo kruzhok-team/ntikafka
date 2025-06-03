@@ -17,6 +17,7 @@ const (
 	attrPlayerID          = attribute.Key("player_id")
 	attrTalentID          = attribute.Key("talent_id")
 	attrTeamID            = attribute.Key("team_id")
+	attrVenueID           = attribute.Key("venue_id")
 )
 
 const (

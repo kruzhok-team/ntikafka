@@ -14,8 +14,9 @@ type TalentPlayerLog struct {
 	TalentUserID int32
 	Action       TalentPlayerLogAction
 	PlayerID     UUID
-	Valid        bool
-	Payload      Value
+
+	Valid   bool
+	Payload Value
 }
 
 type TalentPlayerLogAction string

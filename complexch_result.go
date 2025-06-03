@@ -17,8 +17,9 @@ type ComplexchResult struct {
 	Score       Null[float64]
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	Valid       bool
-	Payload     Value
+
+	Valid   bool
+	Payload Value
 }
 
 func (s *ComplexchResult) SetAttributes(span trace.Span) {

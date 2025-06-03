@@ -17,8 +17,9 @@ type Achievement struct {
 	RoleID    int32
 	PersonID  Null[int32]
 	TeamID    Null[int32]
-	Valid     bool
-	Payload   Value
+
+	Valid   bool
+	Payload Value
 }
 
 func (a *Achievement) SetAttributes(span trace.Span) {

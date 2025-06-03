@@ -1,6 +1,7 @@
 package ntikafka
 
 import (
+	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
 )
@@ -70,4 +71,39 @@ func (n *NullInt32) Decode(d *jx.Decoder) error {
 	(*n).Valid = true
 	(*n).V = v
 	return nil
+}
+
+func DeNullStr(d *jx.Decoder) (string, error) {
+	if d.Next() == jx.Null {
+		return "", d.Skip()
+	}
+	return d.Str()
+}
+
+// Точка из PostgreSQL сформированная Debezium.
+type Point struct {
+	X     float64
+	Y     float64
+	Valid bool
+}
+
+func (p *Point) Decode(d *jx.Decoder) error {
+	if d.Next() == jx.Null {
+		return nil
+	}
+	return d.ObjBytes(func(d *jx.Decoder, key []byte) (err error) {
+		p.Valid = true
+		switch string(key) {
+		case "x":
+			p.X, err = d.Float64()
+		case "y":
+			p.Y, err = d.Float64()
+		default:
+			err = d.Skip()
+		}
+		if err != nil {
+			err = errors.Wrap(err, string(key))
+		}
+		return err
+	})
 }
