@@ -100,12 +100,13 @@ func TestAchievementAfter(t *testing.T) {
 
 func BenchmarkAchievementAfter(b *testing.B) {
 	bench := func(name string, data []byte) {
+		span := noopSpan()
 		b.Run(name, func(b *testing.B) {
 			d := jx.DecodeBytes(data)
 			b.ReportAllocs()
 			for b.Loop() {
 				d.ResetBytes(data)
-				if _, err := AchievementAfter(d, nil); err != nil {
+				if _, err := AchievementAfter(d, span); err != nil {
 					b.Fatal(err)
 				}
 			}
