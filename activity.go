@@ -59,9 +59,7 @@ func ActivityAfter(d *jx.Decoder, span trace.Span) (Activity, error) {
 		return act, err
 	}
 	if act.Payload.After == nil {
-		if span != nil {
-			span.AddEvent("отсутствует значение payload.after")
-		}
+		span.AddEvent("отсутствует значение payload.after")
 		return act, nil
 	}
 	d.ResetBytes(act.Payload.After)
@@ -69,13 +67,9 @@ func ActivityAfter(d *jx.Decoder, span trace.Span) (Activity, error) {
 		return act, err
 	}
 	if !act.Valid {
-		if span != nil {
-			span.AddEvent("отсутствует значение payload.after")
-		}
+		span.AddEvent("отсутствует значение payload.after")
 		return act, nil
 	}
-	if span != nil {
-		act.SetAttributes(span)
-	}
+	act.SetAttributes(span)
 	return act, nil
 }

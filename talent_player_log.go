@@ -14,9 +14,6 @@ type TalentPlayerLog struct {
 	TalentUserID int32
 	Action       TalentPlayerLogAction
 	PlayerID     UUID
-
-	Valid   bool
-	Payload Value
 }
 
 type TalentPlayerLogAction string
@@ -47,7 +44,6 @@ func (s *TalentPlayerLog) SetAttributes(span trace.Span) {
 
 func (s *TalentPlayerLog) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
-		s.Valid = true
 		var err error
 		switch string(key) {
 		case "id":

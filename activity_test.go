@@ -5,55 +5,49 @@ import (
 
 	"github.com/go-faster/jx"
 	"github.com/google/go-cmp/cmp"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func BenchmarkActivityAfter(b *testing.B) {
 	bench := func(name string, data []byte) {
-		for name, span := range iterspan(name) {
-			b.Run(name, func(b *testing.B) {
-				d := jx.DecodeBytes(data)
-				b.ReportAllocs()
-				for b.Loop() {
-					d.ResetBytes(data)
-					_, err := ActivityAfter(d, span)
-					if err != nil {
-						b.Fatal(err)
-					}
+		span := noopSpan()
+		b.Run(name, func(b *testing.B) {
+			d := jx.DecodeBytes(data)
+			b.ReportAllocs()
+			for b.Loop() {
+				d.ResetBytes(data)
+				if _, err := ActivityAfter(d, span); err != nil {
+					b.Fatal(err)
 				}
-			})
-			b.Run(name+"/Ptr", func(b *testing.B) {
-				act := &Activity{}
-				d := jx.DecodeBytes(data)
-				b.ReportAllocs()
-				for b.Loop() {
-					d.ResetBytes(data)
-					err := DecodeAfter(d, span, &(act).Payload, act, &act.Valid)
-					if err != nil {
-						b.Fatal(err)
-					}
-					if span != nil && act.Valid {
-						act.SetAttributes(span)
-					}
+			}
+		})
+		b.Run(name+"/Ptr", func(b *testing.B) {
+			act := &Activity{}
+			d := jx.DecodeBytes(data)
+			v := new(Value)
+			b.ReportAllocs()
+			for b.Loop() {
+				d.ResetBytes(data)
+				if err := v.DecodeAfter(d, span, act); err != nil {
+					b.Fatal(err)
 				}
-			})
-		}
+			}
+		})
 	}
 
 	bench("payload_minimal", []byte(`{
-  "schema": {
-    "type": "struct",
-    "fields": [
-      {
-        "type": "int64",
-        "optional": true,
-        "field": "ts_ms"
-      }
-    ],
-    "optional": false,
-    "name": "test_db.public.test_table.Envelope",
-    "version": 1
-  },
+		"schema": {
+			"type": "struct",
+			"fields": [
+				{
+					"type": "int64",
+					"optional": true,
+					"field": "ts_ms"
+				}
+			],
+			"optional": false,
+			"name": "test_db.public.test_table.Envelope",
+			"version": 1
+		},
 		"payload": {
 			"before": null,
 			"after": {
@@ -186,20 +180,18 @@ func TestActivityAfter(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		testspan(t, tt.name, func(t *testing.T, span trace.Span) {
-			got, gotErr := ActivityAfter(jx.DecodeStr(tt.value), span)
-			if gotErr != nil {
-				if !tt.wantErr {
-					t.Errorf("ActivityAfter() вернул ошибку: %v", gotErr)
-				}
-				return
+		got, gotErr := ActivityAfter(jx.DecodeStr(tt.value), noopSpan())
+		if gotErr != nil {
+			if !tt.wantErr {
+				t.Errorf("ActivityAfter() вернул ошибку: %v", gotErr)
 			}
-			if tt.wantErr {
-				t.Fatal("ActivityAfter() неожиданно не вернул ошибку")
-			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ActivityAfter() = %s", diff)
-			}
-		})
+			return
+		}
+		if tt.wantErr {
+			t.Fatal("ActivityAfter() неожиданно не вернул ошибку")
+		}
+		if diff := cmp.Diff(tt.want, got); diff != "" {
+			t.Errorf("ActivityAfter() = %s", diff)
+		}
 	}
 }

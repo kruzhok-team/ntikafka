@@ -13,9 +13,6 @@ type PassedChallenge struct {
 	ChallengeID int32
 	PlayerID    UUID
 	ActivityID  UUID
-
-	Valid   bool
-	Payload Value
 }
 
 func (s *PassedChallenge) SetAttributes(span trace.Span) {
@@ -29,7 +26,6 @@ func (s *PassedChallenge) SetAttributes(span trace.Span) {
 
 func (s *PassedChallenge) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
-		s.Valid = true
 		var err error
 		switch string(key) {
 		case "challenge_id":

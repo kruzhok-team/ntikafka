@@ -73,7 +73,7 @@ func (n *NullInt32) Decode(d *jx.Decoder) error {
 	return nil
 }
 
-func DeNullStr(d *jx.Decoder) (string, error) {
+func deNullStr(d *jx.Decoder) (string, error) {
 	if d.Next() == jx.Null {
 		return "", d.Skip()
 	}

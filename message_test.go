@@ -8,7 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
+	"github.com/google/go-cmp/cmp"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func testFile(fname string) []byte {
@@ -141,5 +144,112 @@ func TestPayload_Decode(t *testing.T) {
 				t.Errorf("Payload = %s, ожидалось %s", g, w)
 			}
 		})
+	}
+}
+
+func TestDecodeAfter(t *testing.T) {
+	d := jx.Decode(nil, 512)
+	s := new(testDecoder)
+
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+		want    testDecoder
+	}{
+		{
+			name:    "empty",
+			input:   "",
+			wantErr: false,
+		},
+		{
+			name:    "empty after",
+			input:   `{"after": null}`,
+			want:    testDecoder{},
+			wantErr: false,
+		},
+		{
+			name:    "ok",
+			input:   `{"after": {"int":42,"float": 3.14}}`,
+			wantErr: false,
+			want:    testDecoder{Int: 42, Float: 3.14},
+		},
+	}
+
+	for _, tt := range tests {
+		for _, schema := range []bool{false, true} {
+			name := tt.name
+			if schema {
+				name += "/+schema"
+			} else {
+				name += "/-schema"
+			}
+			input := tt.input
+			if schema && input != "" {
+				input = `{"schema": {}, "payload":` + tt.input + `}`
+			}
+
+			t.Run(name, func(t *testing.T) {
+				d.ResetBytes([]byte(input))
+				var v Value
+				err := v.DecodeAfter(d, noopSpan(), s)
+				if err != nil {
+					if !tt.wantErr {
+						t.Errorf("DecodeAfter() failed: %v", err)
+					}
+					return
+				}
+				if tt.wantErr {
+					t.Fatal("DecodeAfter() succeeded unexpectedly")
+				}
+				if diff := cmp.Diff(tt.want, *s); diff != "" {
+					t.Errorf("Результат DecodeAfter() отличается от ожидаемого: %s", diff)
+				}
+			})
+		}
+	}
+}
+
+type testDecoder struct {
+	Int   int
+	Float float64
+}
+
+// Decode implements Decoder.
+func (t *testDecoder) Decode(d *jx.Decoder) error {
+	return d.ObjBytes(func(d *jx.Decoder, key []byte) (err error) {
+		switch string(key) {
+		case "int":
+			t.Int, err = d.Int()
+		case "float":
+			t.Float, err = d.Float64()
+		default:
+			err = d.Skip()
+		}
+		if err != nil {
+			err = errors.Wrap(err, string(key))
+		}
+		return err
+	})
+}
+
+func (t *testDecoder) SetAttributes(span trace.Span) {
+	// NOTE: Метод должен успешно вызвать SetAttributes с объекта span.
+	// При этом сами атрибуты мы искючаем чтобы не выполнять аллокаций
+	// и не влиять ими на итоговую статистику.
+	span.SetAttributes()
+}
+
+func BenchmarkDecodeAfter(b *testing.B) {
+	span := noopSpan()
+	data := []byte(`{"after": {"int":42,"float": 3.14}}`)
+	d := jx.DecodeBytes(data)
+	s := new(testDecoder)
+	v := new(Value)
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := v.DecodeAfter(d, span, s); err != nil {
+			b.Fatal(err)
+		}
 	}
 }

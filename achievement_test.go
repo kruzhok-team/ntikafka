@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-faster/jx"
 	"github.com/google/go-cmp/cmp"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var achievementValue = `{
@@ -81,23 +80,21 @@ func TestAchievementAfter(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		testspan(t, tt.name, func(t *testing.T, span trace.Span) {
-			got, gotErr := AchievementAfter(jx.DecodeStr(tt.value), span)
-			if gotErr != nil {
-				if !tt.wantErr {
-					t.Errorf("AchievementAfter() failed: %v", gotErr)
-				}
-				return
+		got, gotErr := AchievementAfter(jx.DecodeStr(tt.value), noopSpan())
+		if gotErr != nil {
+			if !tt.wantErr {
+				t.Errorf("AchievementAfter() failed: %v", gotErr)
 			}
-			if tt.wantErr {
-				t.Fatal("AchievementAfter() неожиданно не вернул ошибку")
-			}
-			got.Payload.Before = nil
-			got.Payload.After = nil
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("AchievementAfter() = %s", diff)
-			}
-		})
+			return
+		}
+		if tt.wantErr {
+			t.Fatal("AchievementAfter() неожиданно не вернул ошибку")
+		}
+		got.Payload.Before = nil
+		got.Payload.After = nil
+		if diff := cmp.Diff(tt.want, got); diff != "" {
+			t.Errorf("AchievementAfter() = %s", diff)
+		}
 	}
 }
 

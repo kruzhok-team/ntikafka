@@ -75,9 +75,7 @@ func AchievementAfter(d *jx.Decoder, span trace.Span) (Achievement, error) {
 		return ach, err
 	}
 	if ach.Payload.After == nil {
-		if span != nil {
-			span.AddEvent("отсутствует значение payload.after")
-		}
+		span.AddEvent("отсутствует значение after")
 		return ach, nil
 	}
 	d.ResetBytes(ach.Payload.After)
@@ -85,13 +83,9 @@ func AchievementAfter(d *jx.Decoder, span trace.Span) (Achievement, error) {
 		return ach, err
 	}
 	if !ach.Valid {
-		if span != nil {
-			span.AddEvent("отсутствует значение payload.after")
-		}
+		span.AddEvent("отсутствует значение after")
 		return ach, nil
 	}
-	if span != nil {
-		ach.SetAttributes(span)
-	}
+	ach.SetAttributes(span)
 	return ach, nil
 }

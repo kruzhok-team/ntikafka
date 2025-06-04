@@ -21,9 +21,6 @@ type VenueGeodata struct {
 	Floor                string
 	Address              string
 	Coordinates          Point
-
-	Valid   bool
-	Payload Value
 }
 
 func (s *VenueGeodata) SetAttributes(span trace.Span) {
@@ -32,33 +29,34 @@ func (s *VenueGeodata) SetAttributes(span trace.Span) {
 
 func (s *VenueGeodata) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
-		s.Valid = true
 		var err error
 		switch string(key) {
 		case "venue_id":
 			s.VenueID, err = d.Int32()
 		case "country":
-			s.Country, err = DeNullStr(d)
+			s.Country, err = deNullStr(d)
 		case "federal_district":
-			s.FederalDistrict, err = DeNullStr(d)
+			s.FederalDistrict, err = deNullStr(d)
 		case "region_with_type":
-			s.RegionWithType, err = DeNullStr(d)
+			s.RegionWithType, err = deNullStr(d)
 		case "city":
-			s.City, err = DeNullStr(d)
+			s.City, err = deNullStr(d)
 		case "city_type_full":
-			s.CityTypeFull, err = DeNullStr(d)
+			s.CityTypeFull, err = deNullStr(d)
 		case "settlement":
-			s.Settlement, err = DeNullStr(d)
+			s.Settlement, err = deNullStr(d)
 		case "settlement_type_full":
-			s.SettlementTypeFull, err = DeNullStr(d)
+			s.SettlementTypeFull, err = deNullStr(d)
 		case "city_district_with_type":
-			s.CityDistrictWithType, err = DeNullStr(d)
+			s.CityDistrictWithType, err = deNullStr(d)
+		case "street_with_type":
+			s.StreetWithType, err = deNullStr(d)
 		case "house":
-			s.House, err = DeNullStr(d)
+			s.House, err = deNullStr(d)
 		case "floor":
-			s.Floor, err = DeNullStr(d)
+			s.Floor, err = deNullStr(d)
 		case "address":
-			s.Address, err = DeNullStr(d)
+			s.Address, err = deNullStr(d)
 		case "coordinates":
 			err = s.Coordinates.Decode(d)
 		default:

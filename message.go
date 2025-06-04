@@ -65,7 +65,7 @@ const (
 // Before и After не nil, если имеются соответствующие ключи,
 // а также, если значение под этим ключем не null.
 type Value struct {
-	Valid     bool
+	Valid     bool // Наличие какого-либо ключа в объекте (payload).
 	Timestamp int64
 	Operation DebeziumOperation
 	Before    jx.Raw
@@ -73,6 +73,10 @@ type Value struct {
 }
 
 func (p *Value) Decode(d *jx.Decoder) error {
+	return p.decode(d, p.decodePayloadKey)
+}
+
+func (p *Value) decode(d *jx.Decoder, keyDecoder func(d *jx.Decoder, key []byte) error) error {
 	if t := d.Next(); t == jx.Null || t == jx.Invalid {
 		return nil
 	}
@@ -81,9 +85,9 @@ func (p *Value) Decode(d *jx.Decoder) error {
 		case "schema":
 			err = d.Skip()
 		case "payload":
-			err = d.ObjBytes(p.decodePayloadKey)
+			err = d.ObjBytes(keyDecoder)
 		default:
-			err = p.decodePayloadKey(d, key)
+			err = keyDecoder(d, key)
 		}
 		if err != nil {
 			err = errors.Wrap(err, string(key))
@@ -128,22 +132,43 @@ type Decoder interface {
 	Decode(*jx.Decoder) error
 }
 
-func DecodeAfter(d *jx.Decoder, span trace.Span, v *Value, s Decoder, valid *bool) error {
-	if err := v.Decode(d); err != nil {
+type SpanAttrDecoder interface {
+	Decoder
+	SetAttributes(span trace.Span)
+}
+
+// Декодирование только значения after в объект s, если это значение имеется.
+func (p *Value) DecodeAfter(d *jx.Decoder, span trace.Span, s SpanAttrDecoder) (err error) {
+	err = p.decode(d, p.decodePayloadOnlyAfter)
+	if err != nil {
 		return err
 	}
-	if v.After == nil {
-		if span != nil {
-			span.AddEvent("отсутствует значение payload.after")
-		}
+	if p.After == nil {
+		span.AddEvent("отсутствует значение after")
 		return nil
 	}
-	d.ResetBytes(v.After)
-	if err := s.Decode(d); err != nil {
-		return err
+	d.ResetBytes(p.After)
+	if err = s.Decode(d); err != nil {
+		return errors.Wrap(err, "after")
 	}
-	if !*valid && span != nil {
-		span.AddEvent("отсутствует значение payload.after")
-	}
+	s.SetAttributes(span)
 	return nil
+}
+
+func (p *Value) decodePayloadOnlyAfter(d *jx.Decoder, key []byte) (err error) {
+	p.Valid = true
+	switch string(key) {
+	case "after":
+		if d.Next() == jx.Null {
+			err = d.Skip()
+			break
+		}
+		p.After, err = d.Raw()
+	default:
+		err = d.Skip()
+	}
+	if err != nil {
+		err = errors.Wrap(err, string(key))
+	}
+	return err
 }
