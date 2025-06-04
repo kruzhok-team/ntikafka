@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/go-faster/errors"
@@ -14,41 +13,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func testFile(fname string) []byte {
-	f, err := os.Open(path.Join("testdata", fname))
-	if err != nil {
-		panic(err)
-	}
-	input, err := io.ReadAll(f)
-	if err != nil {
-		panic(err)
-	}
-	return input
-}
-
-func oneline(src string) string {
-	lines := strings.Split(src, "\n")
-	patched := make([]string, len(lines))
-	for i, s := range lines {
-		patched[i] = strings.TrimSpace(s)
-	}
-	return strings.Join(patched, " ")
-}
-
-func BenchmarkPayload_Decode(b *testing.B) {
-	input := testFile("debezium_message_value.json")
-	d := jx.DecodeBytes(input)
-	b.ReportAllocs()
-	var p Value
-	for b.Loop() {
-		d.ResetBytes(input)
-		if err := p.Decode(d); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func TestPayload_Decode(t *testing.T) {
+func TestValue_Decode(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   string
@@ -129,25 +94,41 @@ func TestPayload_Decode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var p Value
-			gotErr := p.Decode(jx.DecodeStr(tt.value))
-			if gotErr != nil {
+			err := p.Decode(jx.DecodeStr(tt.value))
+			if err != nil {
 				if !tt.wantErr {
-					t.Errorf("Decode() вернул ошибку: %v", gotErr)
+					t.Errorf("Decode() вернул ошибку: %v", err)
 				}
-				t.Logf("Содержимое полученной (ожидаемой) ошибки: %q", gotErr)
+				t.Logf("Содержимое полученной (ожидаемой) ошибки: %q", err)
 				return
 			}
 			if tt.wantErr {
 				t.Fatal("Decode() неожиданно не вернул ошибку")
 			}
 			if g, w := fmt.Sprintf("%+v", p), fmt.Sprintf("%+v", tt.want); g != w {
-				t.Errorf("Payload = %s, ожидалось %s", g, w)
+				t.Errorf("Value = %s, ожидалось %s", g, w)
 			}
 		})
 	}
 }
 
-func TestDecodeAfter(t *testing.T) {
+func BenchmarkValue_Decode(b *testing.B) {
+	d := jx.Decode(nil, 0)
+	p := &Value{}
+
+	b.Run("debezium_message_value.json", func(b *testing.B) {
+		input := testFile("debezium_message_value.json")
+		b.ReportAllocs()
+		for b.Loop() {
+			d.ResetBytes(input)
+			if err := p.Decode(d); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
+func TestValue_DecodeAfter(t *testing.T) {
 	d := jx.Decode(nil, 512)
 	s := new(testDecoder)
 
@@ -203,11 +184,37 @@ func TestDecodeAfter(t *testing.T) {
 					t.Fatal("DecodeAfter() succeeded unexpectedly")
 				}
 				if diff := cmp.Diff(tt.want, *s); diff != "" {
-					t.Errorf("Результат DecodeAfter() отличается от ожидаемого: %s", diff)
+					t.Errorf("testDecoder отличается от ожидаемого: %s", diff)
 				}
 			})
 		}
 	}
+}
+
+func BenchmarkValue_DecodeAfter(b *testing.B) {
+	span := noopSpan()
+	data := []byte(`{"after": {"int":42,"float": 3.14}}`)
+	d := jx.DecodeBytes(data)
+	s := new(testDecoder)
+	v := new(Value)
+	b.ReportAllocs()
+	for b.Loop() {
+		if err := v.DecodeAfter(d, span, s); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func testFile(fname string) []byte {
+	f, err := os.Open(path.Join("testdata", fname))
+	if err != nil {
+		panic(err)
+	}
+	input, err := io.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+	return input
 }
 
 type testDecoder struct {
@@ -238,18 +245,4 @@ func (t *testDecoder) SetAttributes(span trace.Span) {
 	// При этом сами атрибуты мы искючаем чтобы не выполнять аллокаций
 	// и не влиять ими на итоговую статистику.
 	span.SetAttributes()
-}
-
-func BenchmarkDecodeAfter(b *testing.B) {
-	span := noopSpan()
-	data := []byte(`{"after": {"int":42,"float": 3.14}}`)
-	d := jx.DecodeBytes(data)
-	s := new(testDecoder)
-	v := new(Value)
-	b.ReportAllocs()
-	for b.Loop() {
-		if err := v.DecodeAfter(d, span, s); err != nil {
-			b.Fatal(err)
-		}
-	}
 }

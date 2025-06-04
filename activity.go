@@ -16,9 +16,6 @@ type Activity struct {
 	PlayerID  UUID
 	ContextID UUID
 	CreatedAt time.Time
-
-	Valid   bool
-	Payload Value
 }
 
 func (a *Activity) SetAttributes(span trace.Span) {
@@ -32,7 +29,6 @@ func (a *Activity) SetAttributes(span trace.Span) {
 
 func (a *Activity) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
-		a.Valid = true
 		var err error
 		switch string(key) {
 		case "id":
@@ -51,25 +47,4 @@ func (a *Activity) Decode(d *jx.Decoder) error {
 		}
 		return err
 	})
-}
-
-func ActivityAfter(d *jx.Decoder, span trace.Span) (Activity, error) {
-	var act Activity
-	if err := act.Payload.Decode(d); err != nil {
-		return act, err
-	}
-	if act.Payload.After == nil {
-		span.AddEvent("отсутствует значение payload.after")
-		return act, nil
-	}
-	d.ResetBytes(act.Payload.After)
-	if err := act.Decode(d); err != nil {
-		return act, err
-	}
-	if !act.Valid {
-		span.AddEvent("отсутствует значение payload.after")
-		return act, nil
-	}
-	act.SetAttributes(span)
-	return act, nil
 }

@@ -7,170 +7,32 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func BenchmarkActivityAfter(b *testing.B) {
-	bench := func(name string, data []byte) {
-		span := noopSpan()
-		b.Run(name, func(b *testing.B) {
-			d := jx.DecodeBytes(data)
-			b.ReportAllocs()
-			for b.Loop() {
-				d.ResetBytes(data)
-				if _, err := ActivityAfter(d, span); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
-		b.Run(name+"/Ptr", func(b *testing.B) {
-			act := &Activity{}
-			d := jx.DecodeBytes(data)
-			v := new(Value)
-			b.ReportAllocs()
-			for b.Loop() {
-				d.ResetBytes(data)
-				if err := v.DecodeAfter(d, span, act); err != nil {
-					b.Fatal(err)
-				}
-			}
-		})
-	}
+const activity = `{
+	"id":"49880c1e-6400-4d11-bb06-854721e8a56c",
+	"created_at":"2023-11-21T17:46:45.062924Z",
+	"context_id":"9b9a23ed-c637-439b-84cd-b10bec5855c7",
+	"player_id":"6c66bd93-8c8f-4cc1-b27f-e78ab44681e5",
+	"scores":null,
+	"quarantine":null,
+	"artefact_id":null,
+	"app_version":"test.0.0"
+}`
 
-	bench("payload_minimal", []byte(`{
-		"schema": {
-			"type": "struct",
-			"fields": [
-				{
-					"type": "int64",
-					"optional": true,
-					"field": "ts_ms"
-				}
-			],
-			"optional": false,
-			"name": "test_db.public.test_table.Envelope",
-			"version": 1
-		},
-		"payload": {
-			"before": null,
-			"after": {
-				"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
-				"player_id": "997e0872-ec93-4b3f-b8ef-d86c8a3a7f07",
-				"context_id": "2aeef629-e0e9-479b-95de-6bf4afdd671c",
-				"created_at": "2025-03-03T13:22:47.212818Z"
-			}
-		}
-	}`))
-
-	bench("schemaless_minimal", []byte(`{
-		"before": null,
-		"after": {
-			"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
-			"player_id": "997e0872-ec93-4b3f-b8ef-d86c8a3a7f07",
-			"context_id": "2aeef629-e0e9-479b-95de-6bf4afdd671c",
-			"created_at": "2025-03-03T13:22:47.212818Z"
-		}
-	}`))
-
-	bench("payload_null", []byte(`{"payload": {"before": null, "after": null}}`))
-}
-
-func TestActivityAfter(t *testing.T) {
+func TestActivity_Decode(t *testing.T) {
 	tests := []struct {
 		name    string
-		value   string
+		input   string
 		want    Activity
 		wantErr bool
 	}{
 		{
-			name:    "empty",
-			value:   ``,
-			want:    Activity{},
-			wantErr: false,
+			name:  "empty",
+			input: "{}",
 		},
 		{
-			name:    "empty payload",
-			value:   `{"payload": {}}`,
-			want:    Activity{},
-			wantErr: false,
-		},
-		{
-			name:    "missing after",
-			value:   `{"payload": {"before": {}}}`,
-			want:    Activity{Payload: Value{Valid: true, Before: jx.Raw(`{}`)}},
-			wantErr: false,
-		},
-		{
-			name:    "null after",
-			value:   `{"payload": {"after": null}}`,
-			want:    Activity{Payload: Value{Valid: true}},
-			wantErr: false,
-		},
-		{
-			name:    "empty object after",
-			value:   `{"payload": {"after": {}}}`,
-			want:    Activity{Payload: Value{Valid: true, After: jx.Raw(`{}`)}},
-			wantErr: false,
-		},
-		{
-			name: "valid after",
-			value: oneline(`{"payload": {"after": {
-				"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
-				"player_id": "997e0872-ec93-4b3f-b8ef-d86c8a3a7f07",
-				"context_id": "2aeef629-e0e9-479b-95de-6bf4afdd671c",
-				"created_at": "2025-03-03T13:22:47.212818Z"
-			}}}`),
+			name:  "ok",
+			input: activity,
 			want: Activity{
-				Valid: true,
-				Payload: Value{
-					Valid: true,
-					After: jx.Raw(oneline(`{
-						"id": "db3e8517-5bfd-4a08-ad1e-b80f4880b527",
-						"player_id": "997e0872-ec93-4b3f-b8ef-d86c8a3a7f07",
-						"context_id": "2aeef629-e0e9-479b-95de-6bf4afdd671c",
-						"created_at": "2025-03-03T13:22:47.212818Z"
-					}`)),
-				},
-				ID:        parseUUID("db3e8517-5bfd-4a08-ad1e-b80f4880b527"),
-				PlayerID:  parseUUID("997e0872-ec93-4b3f-b8ef-d86c8a3a7f07"),
-				ContextID: parseUUID("2aeef629-e0e9-479b-95de-6bf4afdd671c"),
-				CreatedAt: parseTime("2025-03-03T13:22:47.212818Z"),
-			},
-			wantErr: false,
-		},
-		{
-			name: "without schema",
-			value: oneline(`{
-				"before":null,
-				"after":{
-					"id":"49880c1e-6400-4d11-bb06-854721e8a56c",
-					"created_at":"2023-11-21T17:46:45.062924Z",
-					"context_id":"9b9a23ed-c637-439b-84cd-b10bec5855c7",
-					"player_id":"6c66bd93-8c8f-4cc1-b27f-e78ab44681e5",
-					"scores":null,
-					"quarantine":null,
-					"artefact_id":null,
-					"app_version":"test.0.0"
-				},
-				"op":"r",
-				"ts_ms":1748417064848,
-				"ts_us":1748417064848402,
-				"ts_ns":1748417064848402160
-			}`),
-			want: Activity{
-				Valid: true,
-				Payload: Value{
-					Valid:     true,
-					Timestamp: 1748417064848,
-					Operation: DebeziumOperationRead,
-					After: jx.Raw(oneline(`{
-						"id":"49880c1e-6400-4d11-bb06-854721e8a56c",
-						"created_at":"2023-11-21T17:46:45.062924Z",
-						"context_id":"9b9a23ed-c637-439b-84cd-b10bec5855c7",
-						"player_id":"6c66bd93-8c8f-4cc1-b27f-e78ab44681e5",
-						"scores":null,
-						"quarantine":null,
-						"artefact_id":null,
-						"app_version":"test.0.0"
-					}`)),
-				},
 				ID:        parseUUID("49880c1e-6400-4d11-bb06-854721e8a56c"),
 				PlayerID:  parseUUID("6c66bd93-8c8f-4cc1-b27f-e78ab44681e5"),
 				ContextID: parseUUID("9b9a23ed-c637-439b-84cd-b10bec5855c7"),
@@ -180,18 +42,31 @@ func TestActivityAfter(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		got, gotErr := ActivityAfter(jx.DecodeStr(tt.value), noopSpan())
-		if gotErr != nil {
+		var s Activity
+		if err := s.Decode(jx.DecodeStr(tt.input)); err != nil {
 			if !tt.wantErr {
-				t.Errorf("ActivityAfter() вернул ошибку: %v", gotErr)
+				t.Errorf("Decode() вернул ошибку: %v", err)
 			}
 			return
 		}
 		if tt.wantErr {
-			t.Fatal("ActivityAfter() неожиданно не вернул ошибку")
+			t.Fatal("Decode() неожиданно не вернул ошибку")
 		}
-		if diff := cmp.Diff(tt.want, got); diff != "" {
-			t.Errorf("ActivityAfter() = %s", diff)
+		if diff := cmp.Diff(tt.want, s); diff != "" {
+			t.Errorf("Activity отличается от ожидаемого: %s", diff)
+		}
+	}
+}
+
+func BenchmarkActivity_Decode(b *testing.B) {
+	data := []byte(activity)
+	d := jx.DecodeBytes(data)
+	s := new(Activity)
+	b.ReportAllocs()
+	for b.Loop() {
+		d.ResetBytes(data)
+		if err := s.Decode(d); err != nil {
+			b.Fatal(err)
 		}
 	}
 }

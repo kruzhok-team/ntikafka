@@ -17,9 +17,6 @@ type Achievement struct {
 	RoleID    int32
 	PersonID  Null[int32]
 	TeamID    Null[int32]
-
-	Valid   bool
-	Payload Value
 }
 
 func (a *Achievement) SetAttributes(span trace.Span) {
@@ -41,7 +38,6 @@ func (a *Achievement) SetAttributes(span trace.Span) {
 
 func (a *Achievement) Decode(d *jx.Decoder) error {
 	return d.ObjBytes(func(d *jx.Decoder, k []byte) (err error) {
-		a.Valid = true
 		switch string(k) {
 		case "id":
 			a.ID, err = d.Int32()
@@ -67,25 +63,4 @@ func (a *Achievement) Decode(d *jx.Decoder) error {
 		}
 		return nil
 	})
-}
-
-func AchievementAfter(d *jx.Decoder, span trace.Span) (Achievement, error) {
-	var ach Achievement
-	if err := ach.Payload.Decode(d); err != nil {
-		return ach, err
-	}
-	if ach.Payload.After == nil {
-		span.AddEvent("отсутствует значение after")
-		return ach, nil
-	}
-	d.ResetBytes(ach.Payload.After)
-	if err := ach.Decode(d); err != nil {
-		return ach, err
-	}
-	if !ach.Valid {
-		span.AddEvent("отсутствует значение after")
-		return ach, nil
-	}
-	ach.SetAttributes(span)
-	return ach, nil
 }

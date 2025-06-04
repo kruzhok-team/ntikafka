@@ -82,7 +82,6 @@ func BenchmarkVenueGeodata_Decode(b *testing.B) {
 	data := []byte(venueGeodata)
 	d := jx.DecodeBytes(data)
 	s := new(VenueGeodata)
-
 	b.ReportAllocs()
 	for b.Loop() {
 		d.ResetBytes(data)
