@@ -89,7 +89,7 @@ type Point struct {
 
 func (p *Point) Decode(d *jx.Decoder) error {
 	if d.Next() == jx.Null {
-		return nil
+		return d.Skip()
 	}
 	return d.ObjBytes(func(d *jx.Decoder, key []byte) (err error) {
 		p.Valid = true
