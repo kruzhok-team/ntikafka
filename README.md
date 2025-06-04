@@ -37,3 +37,12 @@ variables:
 ```
 
 4. В `Dockerfile`, перед выполнением `go mod download` нужно скопировать в образ директорию `vendors`.
+
+
+Зависимые проекты
+-----------------
+
+- [talent-v2](https://gitlab.jetstyle.in/jetstyle/nti/talent-v2)
+- [berloga-awards](https://gitlab.jetstyle.in/jetstyle/nti/berloga-awards)
+- [calcon](https://gitlab.jetstyle.in/jetstyle/nti/calc-constructor-back)
+- [drugoe-delo](https://gitlab.jetstyle.in/jetstyle/nti/drugoe-delo)
