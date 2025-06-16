@@ -36,6 +36,8 @@ func (s *Date) Decode(d *jx.Decoder) error {
 	return nil
 }
 
+// DecodeDate декодирует строку даты/времени в формате [time.RFC3339Nano]
+// Функция использует unsafe чтобы избежать аллокации.
 func DecodeDate(d *jx.Decoder) (time.Time, error) {
 	var t time.Time
 	raw, err := d.StrBytes()

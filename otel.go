@@ -10,6 +10,7 @@ const (
 	attrID                = attribute.Key("id") // Ключ для неизвестного типа идентификатора
 	attrActivityID        = attribute.Key("activity_id")
 	attrChallengeID       = attribute.Key("challenge_id")
+	attrCompetenceID      = attribute.Key("competence_id")
 	attrComplexchResultID = attribute.Key("complexch_result_id")
 	attrContextID         = attribute.Key("context_id")
 	attrEventID           = attribute.Key("event_id")
@@ -24,6 +25,11 @@ const (
 	attrCreatedAt = attribute.Key("created_at")
 	attrUpdatedAt = attribute.Key("updated_at")
 	attrPassedAt  = attribute.Key("passed_at")
+)
+
+const (
+	attrScore = attribute.Key("score")
+	attrYear = attribute.Key("year")
 )
 
 const (

@@ -46,3 +46,4 @@ variables:
 - [berloga-awards](https://gitlab.jetstyle.in/jetstyle/nti/berloga-awards)
 - [calcon](https://gitlab.jetstyle.in/jetstyle/nti/calc-constructor-back)
 - [drugoe-delo](https://gitlab.jetstyle.in/jetstyle/nti/drugoe-delo)
+- [venue-api](https://gitlab.jetstyle.in/jetstyle/nti/venue-api)
