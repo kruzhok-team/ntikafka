@@ -50,7 +50,7 @@ func (s *TalentPlayerLog) Decode(d *jx.Decoder) error {
 			s.ID, err = d.Int32()
 		case "created_at":
 			s.CreatedAt, err = DecodeDate(d)
-		case "talent_id":
+		case "talent_user_id":
 			s.TalentUserID, err = d.Int32()
 		case "player_id":
 			err = s.PlayerID.Decode(d)

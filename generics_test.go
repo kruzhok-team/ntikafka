@@ -21,6 +21,7 @@ func parseTime(s string) time.Time {
 	return v
 }
 
+// Бенчмарк статичного Nullable для сравнения с дженериком.
 func BenchmarkNullInt32_Decode(b *testing.B) {
 	for _, data := range []string{`null`, `42`} {
 		b.Run(data, func(b *testing.B) {
