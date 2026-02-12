@@ -1,4 +1,4 @@
-module gitlab.jetstyle.in/jetstyle/nti/go/ntikafka
+module github.com/kruzhok-team/ntikafka
 
 go 1.24.3
 
