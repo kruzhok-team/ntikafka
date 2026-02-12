@@ -41,7 +41,7 @@ const dialerTimeout time.Duration = time.Second * 10
 // Обработчик сообщения.
 type MessageHandler func(context.Context, kafka.Message) error
 
-// // Запуск Kafka Consumer в составе группы group и топика topic.
+// Запуск Kafka Consumer в составе группы KAFKA_GROUP.
 func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler) (err error) {
 	cfg := consumeCfg{}
 	cfg.conn, err = newConnectCfg()
