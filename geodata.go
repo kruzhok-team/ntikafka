@@ -11,7 +11,9 @@ type VenueGeodata struct {
 	Country              string
 	FederalDistrict      string
 	RegionWithType       string
+	RegionFIAS           Null[UUID]
 	City                 string
+	CityFIAS             Null[UUID]
 	CityTypeFull         string
 	Settlement           string
 	SettlementTypeFull   string
@@ -37,10 +39,14 @@ func (s *VenueGeodata) Decode(d *jx.Decoder) error {
 			s.Country, err = deNullStr(d)
 		case "federal_district":
 			s.FederalDistrict, err = deNullStr(d)
+		case "region_fias":
+			err = s.RegionFIAS.Decode(d)
 		case "region_with_type":
 			s.RegionWithType, err = deNullStr(d)
 		case "city":
 			s.City, err = deNullStr(d)
+		case "city_fias":
+			err = s.CityFIAS.Decode(d)
 		case "city_type_full":
 			s.CityTypeFull, err = deNullStr(d)
 		case "settlement":

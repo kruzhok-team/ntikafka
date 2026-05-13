@@ -1,6 +1,8 @@
 package ntikafka
 
 import (
+	"fmt"
+
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
@@ -12,11 +14,24 @@ type Null[T any] struct {
 	Valid bool
 }
 
+// Decode выполняет декодирование только если T реализует [Decoder]!
+func (n *Null[T]) Decode(d *jx.Decoder) error {
+	if d.Next() == jx.Null {
+		return d.Skip()
+	}
+	if v, ok := any(&n.V).(Decoder); ok {
+		(*n).Valid = true
+		return v.Decode(d)
+	}
+	panic(fmt.Sprintf("%T does not implement Decoder", n.V))
+}
+
 // DecodeReceiver от next ожидает, что функция сама заполнит значение свойства V.
 func (n *Null[T]) DecodeReceiver(d *jx.Decoder, next func(d *jx.Decoder) error) error {
 	if d.Next() == jx.Null {
 		return d.Skip()
 	}
+	(*n).Valid = true
 	return next(d)
 }
 

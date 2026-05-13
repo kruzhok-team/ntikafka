@@ -86,6 +86,29 @@ func BenchmarkNull_Decode(b *testing.B) {
 	}
 }
 
+func TestNull_Decoder(t *testing.T) {
+	for src, want := range map[string]Null[UUID]{
+		`null`: Null[UUID]{
+			V:     UUID{},
+			Valid: false,
+		},
+		`"a9af45a7-47fd-42ee-9983-1e6c9284d386"`: Null[UUID]{
+			V:     UUID(uuid.MustParse("a9af45a7-47fd-42ee-9983-1e6c9284d386")),
+			Valid: true,
+		},
+	} {
+		t.Run(src, func(t *testing.T) {
+			var v Null[UUID]
+			if err := v.Decode(jx.DecodeBytes([]byte(src))); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(want, v); diff != "" {
+				t.Errorf("Null[UUID].Decode(%s):\n%s", src, diff)
+			}
+		})
+	}
+}
+
 func TestPoint(t *testing.T) {
 	d := jx.Decode(nil, 512)
 	for _, tt := range []struct {

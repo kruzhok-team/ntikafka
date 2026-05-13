@@ -19,7 +19,7 @@ func DecodeUUID(d *jx.Decoder, dst *[16]byte) error {
 	if err != nil {
 		return err
 	}
-	for i, s := range id {
+	for i, s := range id { // NOTE: Возможно лучше использовать copy.
 		dst[i] = s
 	}
 	return nil
