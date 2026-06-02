@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -20,7 +19,7 @@ func Producer(ctx context.Context, netErrLog *slog.Logger) (p *kafka.Writer, err
 	}
 	transport := &kafka.Transport{
 		SASL:     mechanism,
-		ClientID: os.Getenv("KAFKA_CLIENT_ID"),
+		ClientID: clientID(ctx),
 	}
 	if tlsConfig != nil {
 		transport.TLS = tlsConfig
