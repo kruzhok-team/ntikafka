@@ -41,6 +41,18 @@ const dialerTimeout time.Duration = time.Second * 10
 // Обработчик сообщения.
 type MessageHandler func(context.Context, kafka.Message) error
 
+const (
+	EnvGroupID  = "KAFKA_GROUP"
+	EnvClientID = "KAFKA_CLIENT_ID"
+)
+
+// Установка KAFKA_CLIENT_ID на основе KAFKA_GROUP.
+func SetConsumerClientID(worker int) {
+	if v := os.Getenv(EnvGroupID); v != "" {
+		os.Setenv(EnvClientID, fmt.Sprintf("%s-%v", v, worker))
+	}
+}
+
 // Запуск Kafka Consumer в составе группы KAFKA_GROUP.
 func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler) (err error) {
 	cfg := consumeCfg{}
@@ -49,7 +61,7 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 		return err
 	}
 	for key, prop := range map[string]*string{
-		"KAFKA_GROUP": &cfg.group,
+		EnvGroupID: &cfg.group,
 	} {
 		v := os.Getenv(key)
 		if v == "" {
@@ -65,7 +77,7 @@ func Consume(ctx context.Context, netErrLog *slog.Logger, handler MessageHandler
 		SASLMechanism: mechanism,
 		Timeout:       dialerTimeout,
 		DualStack:     true,
-		ClientID:      os.Getenv("KAFKA_CLIENT_ID"),
+		ClientID:      os.Getenv(EnvClientID),
 	}
 	if tlsConfig != nil {
 		dialer.TLS = tlsConfig
