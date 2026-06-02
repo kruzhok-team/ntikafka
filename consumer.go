@@ -116,7 +116,10 @@ type DecodeError struct {
 
 // Error implements error.
 func (d *DecodeError) Error() string {
-	return fmt.Sprintf("decode message %s: %v", d.Src, d.Err)
+	if d.Src != "" {
+		return fmt.Sprintf("decode message %s: %v", d.Src, d.Err)
+	}
+	return fmt.Sprintf("decode message: %v", d.Err)
 }
 
 func (d *DecodeError) Unwrap() error {

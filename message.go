@@ -34,7 +34,11 @@ type Value struct {
 }
 
 func (p *Value) Decode(d *jx.Decoder) error {
-	return p.decode(d, p.decodePayloadKey)
+	err := p.decode(d, p.decodePayloadKey)
+	if err != nil {
+		err = &DecodeError{Err: err}
+	}
+	return err
 }
 
 func (p *Value) decode(d *jx.Decoder, keyDecoder func(d *jx.Decoder, key []byte) error) error {
@@ -100,6 +104,14 @@ type SpanAttrDecoder interface {
 
 // Декодирование только значения after в объект s, если это значение имеется.
 func (p *Value) DecodeAfter(d *jx.Decoder, span trace.Span, s SpanAttrDecoder) (err error) {
+	err = p.decodeAfter(d, span, s)
+	if err != nil {
+		err = &DecodeError{Err: err}
+	}
+	return err
+}
+
+func (p *Value) decodeAfter(d *jx.Decoder, span trace.Span, s SpanAttrDecoder) (err error) {
 	err = p.decode(d, p.decodePayloadOnlyAfter)
 	if err != nil {
 		return err
