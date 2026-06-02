@@ -9,6 +9,17 @@ import (
 	"github.com/google/uuid"
 )
 
+func TestDecodeDate(t *testing.T) {
+	got, err := DecodeDate(jx.DecodeBytes([]byte(`6822`)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := time.Date(1988, time.September, 5, 0, 0, 0, 0, time.UTC)
+	if !got.Equal(want) {
+		t.Errorf("DecodeDate: %v, вместо %v", got, want)
+	}
+}
+
 func parseUUID(s string) UUID {
 	return (UUID)(uuid.MustParse(s))
 }

@@ -34,7 +34,7 @@ func (s *PassedChallengeV2) Decode(d *jx.Decoder) error {
 		case "user_id":
 			s.UserID, err = d.Int32()
 		case "passed_at":
-			s.PassedAt, err = DecodeDate(d)
+			s.PassedAt, err = DecodeTimestamp(d)
 		default:
 			err = d.Skip()
 		}

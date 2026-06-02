@@ -47,9 +47,9 @@ func (s *UserScore) Decode(d *jx.Decoder) error {
 		case "score":
 			s.Score, err = d.Float64()
 		case "created_at":
-			s.CreatedAt, err = DecodeDate(d)
+			s.CreatedAt, err = DecodeTimestamp(d)
 		case "updated_at":
-			s.UpdatedAt, err = DecodeDate(d)
+			s.UpdatedAt, err = DecodeTimestamp(d)
 		case "details":
 			if s.WithDetails {
 				s.Details, err = d.Raw()

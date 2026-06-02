@@ -38,7 +38,7 @@ func (a *Activity) Decode(d *jx.Decoder) error {
 		case "context_id":
 			err = a.ContextID.Decode(d)
 		case "created_at":
-			a.CreatedAt, err = DecodeDate(d)
+			a.CreatedAt, err = DecodeTimestamp(d)
 		default:
 			err = d.Skip()
 		}

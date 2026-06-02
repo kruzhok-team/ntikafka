@@ -29,7 +29,7 @@ const (
 
 const (
 	attrScore = attribute.Key("score")
-	attrYear = attribute.Key("year")
+	attrYear  = attribute.Key("year")
 )
 
 const (
@@ -47,6 +47,11 @@ const (
 	attrComplexchResultPassed    = attribute.Key("complexch_result.passed")
 	attrComplexchResultPassedWas = attribute.Key("complexch_result.passed_was")
 	attrComplexchResultScore     = attribute.Key("complexch_result.score")
+)
+
+const (
+	attrUserEmail = attribute.Key("user_email")
+	attrUserPhone = attribute.Key("user_phone")
 )
 
 // Атрибуты сообщения Kafka.

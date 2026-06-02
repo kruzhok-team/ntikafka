@@ -1,51 +1,10 @@
 package ntikafka
 
 import (
-	"time"
-	"unsafe"
-
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
 )
-
-func DecodeUUID(d *jx.Decoder, dst *[16]byte) error {
-	raw, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	id, err := uuid.ParseBytes(raw)
-	if err != nil {
-		return err
-	}
-	for i, s := range id { // NOTE: Возможно лучше использовать copy.
-		dst[i] = s
-	}
-	return nil
-}
-
-type Date time.Time
-
-func (s *Date) Decode(d *jx.Decoder) error {
-	t, err := DecodeDate(d)
-	if err != nil {
-		return err
-	}
-	*s = Date(t)
-	return nil
-}
-
-// DecodeDate декодирует строку даты/времени в формате [time.RFC3339Nano]
-// Функция использует unsafe чтобы избежать аллокации.
-func DecodeDate(d *jx.Decoder) (time.Time, error) {
-	var t time.Time
-	raw, err := d.StrBytes()
-	if err != nil {
-		return t, err
-	}
-	return time.Parse(time.RFC3339Nano, *(*string)(unsafe.Pointer(&raw)))
-}
 
 type DebeziumOperation string
 

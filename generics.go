@@ -2,11 +2,49 @@ package ntikafka
 
 import (
 	"fmt"
+	"time"
+	"unsafe"
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
 )
+
+func DecodeUUID(d *jx.Decoder, dst *[16]byte) error {
+	raw, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	id, err := uuid.ParseBytes(raw)
+	if err != nil {
+		return err
+	}
+	for i, s := range id { // NOTE: Возможно лучше использовать copy.
+		dst[i] = s
+	}
+	return nil
+}
+
+// DecodeDate декодирует дату из числового представления.
+// Debezium кодирует date (как возможно и postgres) в int32 с кол-ом дней с epoch.
+func DecodeDate(d *jx.Decoder) (time.Time, error) {
+	days, err := d.Int32()
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(0, 0).Add(time.Hour * 24 * time.Duration(days)), nil
+}
+
+// DecodeTimestamp декодирует строку даты/времени в формате [time.RFC3339Nano]
+// Функция использует unsafe чтобы избежать аллокации.
+func DecodeTimestamp(d *jx.Decoder) (time.Time, error) {
+	var t time.Time
+	raw, err := d.StrBytes()
+	if err != nil {
+		return t, err
+	}
+	return time.Parse(time.RFC3339Nano, *(*string)(unsafe.Pointer(&raw)))
+}
 
 // Null для любого типа.
 type Null[T any] struct {
@@ -68,6 +106,11 @@ func DecodeInt32(d *jx.Decoder) (int32, error) {
 // DecodeFloat64 для использования в Null[float64].DecodeValue.
 func DecodeFloat64(d *jx.Decoder) (float64, error) {
 	return d.Float64()
+}
+
+// DecodeString для использования в Null[string].DecodeValue.
+func DecodeString(d *jx.Decoder) (string, error) {
+	return d.Str()
 }
 
 type NullInt32 struct {

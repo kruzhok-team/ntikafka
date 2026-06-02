@@ -42,9 +42,9 @@ func (a *Achievement) Decode(d *jx.Decoder) error {
 		case "id":
 			a.ID, err = d.Int32()
 		case "created_at":
-			a.CreatedAt, err = DecodeDate(d)
+			a.CreatedAt, err = DecodeTimestamp(d)
 		case "updated_at":
-			a.UpdatedAt, err = DecodeDate(d)
+			a.UpdatedAt, err = DecodeTimestamp(d)
 		case "status":
 			a.Status, err = d.Str()
 		case "event_id":
