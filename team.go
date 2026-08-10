@@ -79,6 +79,7 @@ type TeamPerson struct {
 	TeamID        int32
 	OwnerAccepted string
 	UserAccepted  string
+	Writer        TeamWriter
 }
 
 func (p *TeamPerson) SetAttributes(span trace.Span) {
@@ -98,6 +99,8 @@ func (p *TeamPerson) Decode(d *jx.Decoder) error {
 			p.PersonID, err = d.Int32()
 		case "team_id":
 			p.TeamID, err = d.Int32()
+		case "writer":
+			err = p.Writer.Decode(d)
 		case "owner_accepted":
 			p.OwnerAccepted, err = d.Str()
 		case "user_accepted":
@@ -110,4 +113,23 @@ func (p *TeamPerson) Decode(d *jx.Decoder) error {
 		}
 		return nil
 	})
+}
+
+type TeamWriter string
+
+const (
+	TeamWriterUnset    TeamWriter = "unset"
+	TeamWriterMember   TeamWriter = "member"
+	TeamWriterOwner    TeamWriter = "owner"
+	TeamWriterOrgAdmin TeamWriter = "org_admin"
+	TeamWriterSvcAdmin TeamWriter = "svc_admin"
+)
+
+func (t *TeamWriter) Decode(d *jx.Decoder) error {
+	v, err := d.Str()
+	if err != nil {
+		return err
+	}
+	*t = TeamWriter(v)
+	return nil
 }

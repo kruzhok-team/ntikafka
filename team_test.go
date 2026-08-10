@@ -29,7 +29,7 @@ func TestTeam(t *testing.T) {
 	t.Logf("Team: %+v", s)
 }
 
-var teamPersonBody = `{"before":null,"after":{"id":3645,"person_id":2,"team_id":42,"owner_accepted":"a","user_accepted":"a"},"source":{"version":"3.0.8.Final","connector":"postgresql","name":"test","ts_ms":1785437441477,"snapshot":"false","db":"test","sequence":"[\"268550594648\",\"268550594976\"]","ts_us":1785437441477689,"ts_ns":1785437441477689000,"schema":"public","table":"teamperson","txId":1284597092,"lsn":268550594976,"xmin":null},"transaction":null,"op":"u","ts_ms":1785437441490,"ts_us":1785437441490421,"ts_ns":1785437441490421635}`
+var teamPersonBody = `{"before":null,"after":{"id":3645,"person_id":2,"team_id":42,"owner_accepted":"a","user_accepted":"a","updated_by":123},"source":{"version":"3.0.8.Final","connector":"postgresql","name":"test","ts_ms":1785437441477,"snapshot":"false","db":"test","sequence":"[\"268550594648\",\"268550594976\"]","ts_us":1785437441477689,"ts_ns":1785437441477689000,"schema":"public","table":"teamperson","txId":1284597092,"lsn":268550594976,"xmin":null},"transaction":null,"op":"u","ts_ms":1785437441490,"ts_us":1785437441490421,"ts_ns":1785437441490421635}`
 
 func TestTeamPerson(t *testing.T) {
 	d := jx.DecodeStr(teamPersonBody)
