@@ -8,6 +8,38 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type EventSettings struct {
+	ID       int32
+	TrackID  int32
+	EventID  int32
+	Score    float64
+	MaxScore Null[float64]
+}
+
+func (s *EventSettings) Decode(d *jx.Decoder) error {
+	return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
+		var err error
+		switch string(key) {
+		case "id":
+			s.ID, err = d.Int32()
+		case "track_id":
+			s.TrackID, err = d.Int32()
+		case "event_id":
+			s.EventID, err = d.Int32()
+		case "score":
+			s.Score, err = d.Float64()
+		case "max_score":
+			err = s.MaxScore.DecodeValue(d, DecodeFloat64)
+		default:
+			err = d.Skip()
+		}
+		if err != nil {
+			err = errors.Wrap(err, string(key))
+		}
+		return err
+	})
+}
+
 type UserScore struct {
 	ID           int32
 	UserID       int32

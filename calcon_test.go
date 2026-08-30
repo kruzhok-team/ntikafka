@@ -79,3 +79,32 @@ func BenchmarkUserScore_Decode(b *testing.B) {
 		})
 	}
 }
+
+const eventSettingsJSON = `{
+	"id": 1,
+	"track_id": 2,
+	"event_id": 3,
+	"score": 4.5,
+	"max_score": 10.25
+}`
+
+func TestEventSettings_Decode(t *testing.T) {
+	var s EventSettings
+	if err := s.Decode(jx.DecodeStr(eventSettingsJSON)); err != nil {
+		t.Fatalf("Decode() returned error: %v", err)
+	}
+
+	want := EventSettings{
+		ID:      1,
+		TrackID: 2,
+		EventID: 3,
+		Score:   4.5,
+		MaxScore: Null[float64]{
+			V:     10.25,
+			Valid: true,
+		},
+	}
+	if diff := cmp.Diff(want, s); diff != "" {
+		t.Fatalf("EventSettings differs from expected: %s", diff)
+	}
+}

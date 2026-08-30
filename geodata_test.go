@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-faster/jx"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 )
 
 const venueGeodata = `{
@@ -21,6 +22,8 @@ const venueGeodata = `{
 	"house":"51",
 	"floor":null,
 	"address":"620000, Свердловская обл, г Екатеринбург, ул Малышева, д 51",
+	"region_fias":"92b30014-4d52-4e2e-892d-928142b924bf",
+	"city_fias":"2763c110-cb8b-416a-9dac-ad28a55b4402",
 	"coordinates":{
 		"x":60.614637,
 		"y":56.836094,
@@ -54,6 +57,8 @@ func TestVenueGeodata_Decode(t *testing.T) {
 				StreetWithType:  "ул Малышева",
 				House:           "51",
 				Address:         "620000, Свердловская обл, г Екатеринбург, ул Малышева, д 51",
+				RegionFIAS:      Null[UUID]{V: UUID(uuid.MustParse("92b30014-4d52-4e2e-892d-928142b924bf")), Valid: true},
+				CityFIAS:        Null[UUID]{V: UUID(uuid.MustParse("2763c110-cb8b-416a-9dac-ad28a55b4402")), Valid: true},
 				Coordinates:     Point{X: 60.614637, Y: 56.836094, Valid: true},
 			},
 		},
