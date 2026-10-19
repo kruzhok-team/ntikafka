@@ -19,8 +19,6 @@ func newConnectCfg() (connectCfg, error) {
 	cfg := connectCfg{}
 	for key, prop := range map[string]*string{
 		"KAFKA_HOST":  &cfg.host,
-		"KAFKA_USER":  &cfg.user,
-		"KAFKA_PASS":  &cfg.pass,
 		"KAFKA_TOPIC": &cfg.topic,
 	} {
 		v := os.Getenv(key)
@@ -28,6 +26,12 @@ func newConnectCfg() (connectCfg, error) {
 			return cfg, fmt.Errorf("отсутствует значение переменной окружения %s", key)
 		}
 		*prop = v
+	}
+	for key, prop := range map[string]*string{
+		"KAFKA_USER": &cfg.user,
+		"KAFKA_PASS": &cfg.pass,
+	} {
+		*prop = os.Getenv(key)
 	}
 	return cfg, nil
 }
